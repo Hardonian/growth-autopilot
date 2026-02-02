@@ -1,0 +1,51 @@
+{
+  "name": "growth-autopilot",
+  "version": "0.1.0",
+  "description": "Runnerless growth autopilot that generates SEO audits, proposes experiments, and drafts content without auto-publishing",
+  "type": "module",
+  "main": "./dist/index.js",
+  "bin": {
+    "growth": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "ci": "pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build"
+  },
+  "keywords": [
+    "growth",
+    "seo",
+    "analytics",
+    "experiments",
+    "autopilot",
+    "jobforge",
+    "runnerless"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^11.1.0",
+    "zod": "^3.22.4",
+    "cheerio": "^1.0.0-rc.12",
+    "glob": "^10.3.10",
+    "yaml": "^2.3.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@typescript-eslint/eslint-plugin": "^6.14.0",
+    "@typescript-eslint/parser": "^6.14.0",
+    "eslint": "^8.55.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.0.4"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.12.0"
+}

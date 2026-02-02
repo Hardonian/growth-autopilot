@@ -1,0 +1,64 @@
+name: readylayer
+extends: base
+icp:
+  description: "Web3 developers and blockchain projects building on ReadyLayer"
+  pain_points:
+    - "complex infrastructure setup"
+    - "high gas costs"
+    - "slow transaction speeds"
+    - "difficulty scaling blockchain apps"
+  goals:
+    - "deploy fast"
+    - "reduce costs"
+    - "scale seamlessly"
+    - "focus on product not infra"
+voice:
+  tone: technical
+  style_guide: "Developer-first language. Be precise about technical benefits. Use analogies to explain complex concepts. Show code examples where relevant."
+  vocabulary:
+    - "deploy"
+    - "scale"
+    - "gasless"
+    - "throughput"
+    - "settlement"
+    - "rollup"
+keywords:
+  primary:
+    - "ReadyLayer"
+    - "AppChain"
+    - "rollup"
+    - "settlement"
+  secondary:
+    - "Web3"
+    - "blockchain"
+    - "scalability"
+    - "gas optimization"
+  prohibited:
+    - "Ethereum killer"
+    - "Web3 revolution"
+    - "decentralized everything"
+features:
+  - name: "One-Click Deployment"
+    description: "Deploy your AppChain in minutes"
+    benefits:
+      - "No complex configuration"
+      - "Production-ready from day one"
+      - "Focus on your app, not infra"
+  - name: "Gasless Transactions"
+    description: "Subsidize gas for your users"
+    benefits:
+      - "Better UX"
+      - "Higher conversion"
+      - "Flexible pricing models"
+  - name: "High Throughput"
+    description: "10,000+ TPS per chain"
+    benefits:
+      - "Scale without bottlenecks"
+      - "Real-time applications"
+      - "Handle traffic spikes"
+prohibited_claims:
+  - "Ethereum killer"
+  - "100% decentralized"
+  - "unhackable"
+required_disclaimers:
+  - "Blockchain transactions are irreversible"

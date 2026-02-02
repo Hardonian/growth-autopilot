@@ -1,0 +1,45 @@
+name: base
+icp:
+  description: "businesses and teams looking to grow"
+  pain_points:
+    - "low conversion rates"
+    - "high customer acquisition costs"
+    - "difficulty measuring growth efforts"
+    - "lack of clear growth strategy"
+  goals:
+    - "increase revenue"
+    - "improve conversion rates"
+    - "reduce acquisition costs"
+    - "make data-driven decisions"
+voice:
+  tone: professional
+  style_guide: "Clear, direct communication. Focus on outcomes and benefits. Avoid jargon unless speaking to technical audiences. Use active voice."
+  vocabulary:
+    - "growth"
+    - "optimize"
+    - "convert"
+    - "scale"
+    - "results"
+    - "data-driven"
+keywords:
+  primary:
+    - "growth"
+    - "optimization"
+    - "conversion"
+    - "analytics"
+  secondary:
+    - "SaaS"
+    - "startup"
+    - "marketing"
+    - "experimentation"
+  prohibited:
+    - "guaranteed"
+    - "instant"
+    - "magic"
+    - "secret"
+features: []
+prohibited_claims:
+  - "guaranteed results"
+  - "instant success"
+  - "works for everyone"
+required_disclaimers: []

@@ -1,0 +1,64 @@
+name: aias
+extends: base
+icp:
+  description: "AI developers and teams building LLM-powered applications"
+  pain_points:
+    - "high inference costs"
+    - "model latency issues"
+    - "scaling challenges"
+    - "vendor lock-in"
+  goals:
+    - "reduce AI costs"
+    - "improve response times"
+    - "scale AI workloads"
+    - "maintain flexibility"
+voice:
+  tone: technical
+  style_guide: "Engineering-focused with emphasis on performance and cost. Be specific about benchmarks and optimizations. Show technical depth."
+  vocabulary:
+    - "inference"
+    - "optimization"
+    - "throughput"
+    - "latency"
+    - "model serving"
+    - "efficiency"
+keywords:
+  primary:
+    - "AIAS"
+    - "inference optimization"
+    - "model serving"
+    - "LLM"
+  secondary:
+    - "AI infrastructure"
+    - "machine learning"
+    - "optimization"
+    - "cost reduction"
+  prohibited:
+    - "AGI"
+    - "sentient AI"
+    - "human-level intelligence"
+features:
+  - name: "Dynamic Batching"
+    description: "Automatic request batching for efficiency"
+    benefits:
+      - "Higher throughput"
+      - "Lower per-request cost"
+      - "Better GPU utilization"
+  - name: "Model Router"
+    description: "Intelligent model selection"
+    benefits:
+      - "Optimal cost/quality tradeoff"
+      - "Automatic fallback"
+      - "Performance optimization"
+  - name: "Caching Layer"
+    description: "Semantic response caching"
+    benefits:
+      - "Reduce redundant calls"
+      - "Faster responses"
+      - "Lower costs"
+prohibited_claims:
+  - "human-level AI"
+  - "consciousness"
+  - "understands like humans"
+required_disclaimers:
+  - "AI outputs should be reviewed for accuracy"

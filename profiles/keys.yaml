@@ -1,0 +1,65 @@
+name: keys
+extends: base
+icp:
+  description: "security teams and developers managing API keys and secrets"
+  pain_points:
+    - "key sprawl"
+    - "security risks"
+    - "rotation complexity"
+    - "access auditing"
+  goals:
+    - "secure secrets"
+    - "automate rotation"
+    - "maintain audit trails"
+    - "prevent breaches"
+voice:
+  tone: professional
+  style_guide: "Security-focused and cautious. Emphasize protection, compliance, and best practices. Never downplay security concerns."
+  vocabulary:
+    - "encryption"
+    - "rotation"
+    - "audit"
+    - "zero-trust"
+    - "least privilege"
+    - "compliance"
+keywords:
+  primary:
+    - "Keys"
+    - "secret management"
+    - "API keys"
+    - "security"
+  secondary:
+    - "encryption"
+    - "rotation"
+    - "audit"
+    - "compliance"
+  prohibited:
+    - "unhackable"
+    - "100% secure"
+    - "military-grade"
+features:
+  - name: "Automated Rotation"
+    description: "Automatic key rotation without downtime"
+    benefits:
+      - "Stay secure effortlessly"
+      - "Compliance made easy"
+      - "Zero disruption"
+  - name: "Access Controls"
+    description: "Fine-grained permissions"
+    benefits:
+      - "Least privilege by default"
+      - "Prevent overexposure"
+      - "Easy access review"
+  - name: "Audit Logging"
+    description: "Complete access and usage logs"
+    benefits:
+      - "Compliance reporting"
+      - "Security monitoring"
+      - "Forensic capabilities"
+prohibited_claims:
+  - "unhackable"
+  - "100% secure"
+  - "military-grade encryption"
+required_disclaimers:
+  - "Security is a shared responsibility"
+  - "No system can guarantee complete security"

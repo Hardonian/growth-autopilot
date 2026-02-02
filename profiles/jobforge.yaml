@@ -1,0 +1,63 @@
+name: jobforge
+extends: base
+icp:
+  description: "development teams and DevOps engineers managing complex workflows"
+  pain_points:
+    - "workflow fragmentation"
+    - "manual deployment steps"
+    - "lack of observability"
+    - "difficulty coordinating teams"
+  goals:
+    - "automate workflows"
+    - "improve reliability"
+    - "reduce manual work"
+    - "ship faster with confidence"
+voice:
+  tone: professional
+  style_guide: "Engineering-focused but accessible. Emphasize reliability, automation, and developer experience. Use concrete examples of time saved."
+  vocabulary:
+    - "workflow"
+    - "automation"
+    - "pipeline"
+    - "deployment"
+    - "orchestration"
+    - "observability"
+keywords:
+  primary:
+    - "JobForge"
+    - "workflow automation"
+    - "CI/CD"
+    - "orchestration"
+  secondary:
+    - "DevOps"
+    - "GitOps"
+    - "pipeline"
+    - "automation"
+  prohibited:
+    - "no-code"
+    - "citizen developer"
+    - "magic"
+features:
+  - name: "Workflow Designer"
+    description: "Visual workflow builder with code export"
+    benefits:
+      - "Design visually, deploy as code"
+      - "Version control friendly"
+      - "Team collaboration"
+  - name: "Runnerless Execution"
+    description: "No infrastructure to manage"
+    benefits:
+      - "Zero maintenance"
+      - "Pay per execution"
+      - "Auto-scaling"
+  - name: "Built-in Observability"
+    description: "Full visibility into every execution"
+    benefits:
+      - "Debug faster"
+      - "Audit trails"
+      - "Performance insights"
+prohibited_claims:
+  - "zero configuration"
+  - "works with any tool"
+  - "no learning curve"
+required_disclaimers: []

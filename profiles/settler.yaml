@@ -1,0 +1,65 @@
+name: settler
+extends: base
+icp:
+  description: "financial teams and businesses managing payments and settlements"
+  pain_points:
+    - "slow settlement times"
+    - "high processing fees"
+    - "compliance complexity"
+    - "reconciliation headaches"
+  goals:
+    - "settle instantly"
+    - "reduce costs"
+    - "ensure compliance"
+    - "automate reconciliation"
+voice:
+  tone: formal
+  style_guide: "Professional and trustworthy. Emphasize security, compliance, and efficiency. Use precise financial terminology appropriately."
+  vocabulary:
+    - "settlement"
+    - "reconciliation"
+    - "compliance"
+    - "liquidity"
+    - "treasury"
+    - "automation"
+keywords:
+  primary:
+    - "Settler"
+    - "payment settlement"
+    - "treasury"
+    - "automation"
+  secondary:
+    - "fintech"
+    - "payments"
+    - "reconciliation"
+    - "compliance"
+  prohibited:
+    - "bank killer"
+    - "too good to be true"
+    - "get rich quick"
+features:
+  - name: "Instant Settlement"
+    description: "Real-time payment settlement"
+    benefits:
+      - "Improve cash flow"
+      - "Reduce counterparty risk"
+      - "24/7 operation"
+  - name: "Auto-Reconciliation"
+    description: "Automatic matching and clearing"
+    benefits:
+      - "Eliminate manual work"
+      - "Reduce errors"
+      - "Close books faster"
+  - name: "Compliance Engine"
+    description: "Built-in regulatory compliance"
+    benefits:
+      - "Stay compliant automatically"
+      - "Audit-ready records"
+      - "Reduce regulatory risk"
+prohibited_claims:
+  - "guaranteed returns"
+  - "risk-free"
+  - "too good to be true"
+required_disclaimers:
+  - "Financial services are subject to regulatory approval"
+  - "Past performance does not guarantee future results"
