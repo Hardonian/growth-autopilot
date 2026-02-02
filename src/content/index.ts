@@ -5,8 +5,8 @@ import {
   type ContentDraft,
   type TenantContext,
   type EvidenceLink,
-  type Profile,
-  ProfileSchema,
+  type GrowthProfile,
+  GrowthProfileSchema,
 } from '../contracts/index.js';
 
 /**
@@ -46,13 +46,12 @@ function createEvidence(
 /**
  * Load a profile from the profiles directory
  */
-async function loadProfile(profileName: string, profilesDir: string): Promise<Profile> {
+async function loadProfile(profileName: string, profilesDir: string): Promise<GrowthProfile> {
   const profilePath = path.join(profilesDir, `${profileName}.yaml`);
-
   try {
     const content = await fs.readFile(profilePath, 'utf-8');
-    const parsed: unknown = yaml.parse(content);
-    return ProfileSchema.parse(parsed);
+    const parsed = yaml.parse(content);
+    return GrowthProfileSchema.parse(parsed);
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       throw new Error(`Profile not found: ${profileName}.yaml`);
@@ -66,7 +65,7 @@ async function loadProfile(profileName: string, profilesDir: string): Promise<Pr
  */
 function generateTemplateContent(
   contentType: ContentDraft['content_type'],
-  profile: Profile,
+  profile: GrowthProfile,
   options: ContentOptions
 ): { headline?: string; body: string; cta?: string; subject_line?: string } {
   const { goal, keywords = [], features = [] } = options;
@@ -183,7 +182,7 @@ Start using ${profile.name} today and see the difference.
  */
 function generateSEOMetadata(
   contentType: ContentDraft['content_type'],
-  profile: Profile,
+  profile: GrowthProfile,
   keywords: string[]
 ): { title?: string; meta_description?: string; keywords: string[] } {
   const allKeywords = [...profile.keywords.primary, ...keywords];

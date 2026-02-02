@@ -1,33 +1,64 @@
 import { z } from 'zod';
 
 /**
- * Core tenant/project identifiers required for all operations
- * Ensures multi-tenant safety
+ * Growth Autopilot Contracts
+ * 
+ * Re-exports common suite types and defines domain-specific schemas.
  */
-export const TenantContextSchema = z.object({
-  tenant_id: z.string().min(1, 'tenant_id is required'),
-  project_id: z.string().min(1, 'project_id is required'),
-});
 
-export type TenantContext = z.infer<typeof TenantContextSchema>;
+// ============================================================================
+// Re-exports from @autopilot/contracts (Suite Compatibility)
+// ============================================================================
+
+export {
+  // Tenant Context
+  TenantContextSchema,
+  type TenantContext,
+  validateTenantContext,
+  
+  // Event Envelope
+  EventEnvelopeSchema,
+  type EventEnvelope,
+  type EventMetadata,
+  createEventEnvelope,
+  
+  // Run Manifest
+  RunManifestSchema,
+  type RunManifest,
+  type Output,
+  createRunManifest,
+  
+  // Report Envelope
+  ReportEnvelopeSchema,
+  type ReportEnvelope,
+  type ReportType,
+  type Severity,
+  type EvidenceLink,
+  type Finding,
+  createReportEnvelope,
+  
+  // Job Request - use suite's canonical version
+  JobRequestSchema,
+  type JobRequest,
+  type JobType,
+  type JobPriority,
+  createJobRequest,
+  
+  // Utilities
+  canonicalizeForHash,
+  stableHash,
+  serializeDeterministic,
+} from '@autopilot/contracts';
+
+// ============================================================================
+// Domain-Specific Schemas (Growth-specific)
+// ============================================================================
 
 /**
- * Evidence link that traces a recommendation back to source signal
- */
-export const EvidenceLinkSchema = z.object({
-  type: z.enum(['html_element', 'json_path', 'url', 'event_count', 'calculation', 'assumption']),
-  path: z.string(),
-  value: z.union([z.string(), z.number(), z.boolean()]).optional(),
-  description: z.string(),
-});
-
-export type EvidenceLink = z.infer<typeof EvidenceLinkSchema>;
-
-/**
- * Severity levels for findings
+ * Local Severity schema for growth-specific usage
+ * Note: Also re-export type Severity from suite
  */
 export const SeveritySchema = z.enum(['critical', 'warning', 'info', 'opportunity']);
-export type Severity = z.infer<typeof SeveritySchema>;
 
 /**
  * SEO Finding - represents a single SEO issue or opportunity
@@ -35,7 +66,7 @@ export type Severity = z.infer<typeof SeveritySchema>;
 export const SEOFindingSchema = z.object({
   id: z.string(),
   url: z.string(),
-  severity: SeveritySchema,
+  severity: z.enum(['critical', 'warning', 'info', 'opportunity']),
   category: z.enum([
     'title',
     'meta_description',
@@ -50,7 +81,12 @@ export const SEOFindingSchema = z.object({
   message: z.string(),
   current_value: z.union([z.string(), z.null()]).optional(),
   recommendation: z.string(),
-  evidence: z.array(EvidenceLinkSchema),
+  evidence: z.array(z.object({
+    type: z.enum(['html_element', 'json_path', 'url', 'event_count', 'calculation', 'assumption']),
+    path: z.string(),
+    value: z.union([z.string(), z.number(), z.boolean()]).optional(),
+    description: z.string(),
+  })),
   line_number: z.number().optional(),
 });
 
@@ -60,7 +96,8 @@ export type SEOFinding = z.infer<typeof SEOFindingSchema>;
  * Complete SEO Audit result
  */
 export const SEOAuditSchema = z.object({
-  ...TenantContextSchema.shape,
+  tenant_id: z.string(),
+  project_id: z.string(),
   id: z.string(),
   scanned_at: z.string().datetime(),
   source_type: z.enum(['nextjs_routes', 'html_export', 'sitemap_url']),
@@ -96,7 +133,8 @@ export type FunnelStep = z.infer<typeof FunnelStepSchema>;
  * Funnel Metrics - computed from event exports
  */
 export const FunnelMetricsSchema = z.object({
-  ...TenantContextSchema.shape,
+  tenant_id: z.string(),
+  project_id: z.string(),
   id: z.string(),
   computed_at: z.string().datetime(),
   source_file: z.string(),
@@ -110,7 +148,12 @@ export const FunnelMetricsSchema = z.object({
   overall_conversion_rate: z.number(),
   steps: z.array(FunnelStepSchema),
   biggest_drop_off_step: z.string().optional(),
-  evidence: z.array(EvidenceLinkSchema),
+  evidence: z.array(z.object({
+    type: z.enum(['html_element', 'json_path', 'url', 'event_count', 'calculation', 'assumption']),
+    path: z.string(),
+    value: z.union([z.string(), z.number(), z.boolean()]).optional(),
+    description: z.string(),
+  })),
 });
 
 export type FunnelMetrics = z.infer<typeof FunnelMetricsSchema>;
@@ -119,7 +162,8 @@ export type FunnelMetrics = z.infer<typeof FunnelMetricsSchema>;
  * Experiment Proposal
  */
 export const ExperimentProposalSchema = z.object({
-  ...TenantContextSchema.shape,
+  tenant_id: z.string(),
+  project_id: z.string(),
   id: z.string(),
   created_at: z.string().datetime(),
   title: z.string(),
@@ -143,7 +187,12 @@ export const ExperimentProposalSchema = z.object({
     description: z.string(),
     changes: z.array(z.string()),
   })),
-  evidence: z.array(EvidenceLinkSchema),
+  evidence: z.array(z.object({
+    type: z.enum(['html_element', 'json_path', 'url', 'event_count', 'calculation', 'assumption']),
+    path: z.string(),
+    value: z.union([z.string(), z.number(), z.boolean()]).optional(),
+    description: z.string(),
+  })),
   job_request_id: z.string().optional(),
 });
 
@@ -153,7 +202,8 @@ export type ExperimentProposal = z.infer<typeof ExperimentProposalSchema>;
  * Content Draft
  */
 export const ContentDraftSchema = z.object({
-  ...TenantContextSchema.shape,
+  tenant_id: z.string(),
+  project_id: z.string(),
   id: z.string(),
   created_at: z.string().datetime(),
   content_type: z.enum([
@@ -187,48 +237,22 @@ export const ContentDraftSchema = z.object({
     keywords: z.array(z.string()).optional(),
   }).optional(),
   variant_count: z.number(),
-  evidence: z.array(EvidenceLinkSchema),
+  evidence: z.array(z.object({
+    type: z.enum(['html_element', 'json_path', 'url', 'event_count', 'calculation', 'assumption']),
+    path: z.string(),
+    value: z.union([z.string(), z.number(), z.boolean()]).optional(),
+    description: z.string(),
+  })),
   job_request_id: z.string().optional(),
 });
 
 export type ContentDraft = z.infer<typeof ContentDraftSchema>;
 
 /**
- * JobForge Job Request
+ * Growth Profile configuration for content generation
+ * Note: This is domain-specific and different from @autopilot/profiles
  */
-export const JobRequestSchema = z.object({
-  ...TenantContextSchema.shape,
-  id: z.string(),
-  created_at: z.string().datetime(),
-  job_type: z.enum([
-    'autopilot.growth.seo_scan',
-    'autopilot.growth.experiment_propose',
-    'autopilot.growth.content_draft',
-    'autopilot.growth.experiment_run',
-    'autopilot.growth.publish_content',
-  ]),
-  payload: z.record(z.unknown()),
-  priority: z.enum(['low', 'medium', 'high', 'critical']).default('medium'),
-  context: z.object({
-    triggered_by: z.string(),
-    related_audit_id: z.string().optional(),
-    related_funnel_id: z.string().optional(),
-    notes: z.string().optional(),
-  }),
-  constraints: z.object({
-    auto_execute: z.boolean().default(false),
-    require_approval: z.boolean().default(true),
-    max_cost_usd: z.number().optional(),
-    deadline: z.string().datetime().optional(),
-  }),
-});
-
-export type JobRequest = z.infer<typeof JobRequestSchema>;
-
-/**
- * Profile configuration for content generation
- */
-export const ProfileSchema = z.object({
+export const GrowthProfileSchema = z.object({
   name: z.string(),
   extends: z.string().optional(),
   icp: z.object({
@@ -255,4 +279,4 @@ export const ProfileSchema = z.object({
   required_disclaimers: z.array(z.string()).optional(),
 });
 
-export type Profile = z.infer<typeof ProfileSchema>;
+export type GrowthProfile = z.infer<typeof GrowthProfileSchema>;

@@ -4,6 +4,7 @@
   "description": "Runnerless growth autopilot that generates SEO audits, proposes experiments, and drafts content without auto-publishing",
   "type": "module",
   "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "bin": {
     "growth": "./dist/cli.js"
   },
@@ -15,7 +16,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "ci": "pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build"
+    "ci": "pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build",
+    "runnerless:audit": "node ../autopilot-suite/packages/runnerless-audit/dist/cli.js ."
   },
   "keywords": [
     "growth",
@@ -27,25 +29,28 @@
     "runnerless"
   ],
   "author": "",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "dependencies": {
-    "commander": "^11.1.0",
-    "zod": "^3.22.4",
+    "@autopilot/contracts": "workspace:*",
+    "@autopilot/jobforge-client": "workspace:*",
+    "@autopilot/profiles": "workspace:*",
+    "commander": "^12.1.0",
+    "zod": "^3.23.8",
     "cheerio": "^1.0.0-rc.12",
-    "glob": "^10.3.10",
-    "yaml": "^2.3.4"
+    "glob": "^11.0.0",
+    "yaml": "^2.6.1"
   },
   "devDependencies": {
-    "@types/node": "^20.10.0",
-    "@typescript-eslint/eslint-plugin": "^6.14.0",
-    "@typescript-eslint/parser": "^6.14.0",
-    "eslint": "^8.55.0",
-    "typescript": "^5.3.3",
-    "vitest": "^1.0.4"
+    "@types/node": "^20.17.0",
+    "@typescript-eslint/eslint-plugin": "^8.19.0",
+    "@typescript-eslint/parser": "^8.19.0",
+    "eslint": "^9.17.0",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
   },
   "engines": {
-    "node": ">=18.0.0",
-    "pnpm": ">=8.0.0"
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
   },
-  "packageManager": "pnpm@8.12.0"
+  "packageManager": "pnpm@9.15.0"
 }
