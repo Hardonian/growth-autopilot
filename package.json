@@ -9,15 +9,17 @@
     "growth": "./dist/cli.js"
   },
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
-    "lint": "eslint src --ext .ts",
+    "build": "tsup src/index.ts src/cli.ts --format esm --dts --clean",
+    "dev": "tsx watch src/cli.ts",
+    "lint": "eslint src --ext .ts --max-warnings=0",
     "lint:fix": "eslint src --ext .ts --fix",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "ci": "pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build",
-    "runnerless:audit": "node ../autopilot-suite/packages/runnerless-audit/dist/cli.js ."
+    "test:coverage": "vitest run --coverage",
+    "check": "pnpm run lint && pnpm run typecheck && pnpm run test",
+    "runnerless:audit": "echo 'Install @autopilot/audit-cli and run: autopilot-audit runnerless .'",
+    "prepublishOnly": "pnpm run build"
   },
   "keywords": [
     "growth",
@@ -31,9 +33,9 @@
   "author": "",
   "license": "Apache-2.0",
   "dependencies": {
-    "@autopilot/contracts": "workspace:*",
-    "@autopilot/jobforge-client": "workspace:*",
-    "@autopilot/profiles": "workspace:*",
+    "@autopilot/contracts": "file:../autopilot-suite/packages/contracts",
+    "@autopilot/jobforge-client": "file:../autopilot-suite/packages/jobforge-client",
+    "@autopilot/profiles": "file:../autopilot-suite/packages/profiles",
     "commander": "^12.1.0",
     "zod": "^3.23.8",
     "cheerio": "^1.0.0-rc.12",
