@@ -8,6 +8,7 @@ import {
   type GrowthProfile,
   GrowthProfileSchema,
 } from '../contracts/index.js';
+import { profileCache, createFileCacheKey } from '../cache.js';
 
 /**
  * Content generation options
@@ -44,14 +45,36 @@ function createEvidence(
 }
 
 /**
- * Load a profile from the profiles directory
+ * Load a profile from the profiles directory with deterministic caching
  */
 async function loadProfile(profileName: string, profilesDir: string): Promise<GrowthProfile> {
   const profilePath = path.join(profilesDir, `${profileName}.yaml`);
+
+  // Check file stats for cache key
+  let cacheKey: string;
+  try {
+    const stats = await fs.stat(profilePath);
+    cacheKey = createFileCacheKey(profilePath, stats.mtimeMs, stats.size);
+  } catch {
+    // If stat fails, fall back to path-based key (file likely doesn't exist)
+    cacheKey = profilePath;
+  }
+
+  // Try cache first
+  const cached = profileCache.get(cacheKey);
+  if (cached !== undefined) {
+    return cached as GrowthProfile;
+  }
+
+  // Load and parse
   try {
     const content = await fs.readFile(profilePath, 'utf-8');
     const parsed: unknown = yaml.parse(content);
-    return GrowthProfileSchema.parse(parsed);
+    const validated = GrowthProfileSchema.parse(parsed);
+
+    // Cache the validated profile
+    profileCache.set(cacheKey, validated);
+    return validated;
   } catch (error) {
     if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
       throw new Error(`Profile not found: ${profileName}.yaml`);

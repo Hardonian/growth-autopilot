@@ -249,14 +249,29 @@ export const JobRequestBundleSchema = z.object({
 
 export type JobRequestBundle = z.infer<typeof JobRequestBundleSchema>;
 
+// WeakMap-based memoization cache for sortKeys
+// Uses WeakMap so cached objects can still be garbage collected
+const sortKeysCache = new WeakMap<object, unknown>();
+
 function sortKeys(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    return value.map((item) => sortKeys(item));
+  // Handle primitives directly (no caching needed)
+  if (value === null || typeof value !== 'object') {
+    return value;
   }
 
-  if (value !== null && typeof value === 'object') {
+  // Check cache for objects
+  const cached = sortKeysCache.get(value);
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  let result: unknown;
+
+  if (Array.isArray(value)) {
+    result = value.map((item) => sortKeys(item));
+  } else {
     const record = value as Record<string, unknown>;
-    return Object.keys(record)
+    result = Object.keys(record)
       .sort()
       .reduce<Record<string, unknown>>((acc, key) => {
         acc[key] = sortKeys(record[key]);
@@ -264,7 +279,8 @@ function sortKeys(value: unknown): unknown {
       }, {});
   }
 
-  return value;
+  sortKeysCache.set(value, result);
+  return result;
 }
 
 export function canonicalizeForHash(value: unknown): string {
@@ -325,6 +341,10 @@ export function createDegradedResponse(
   });
 }
 
+// Default retry delays to avoid thundering herd (exponential backoff: 1s, 2s, 4s...)
+const DEFAULT_RETRY_AFTER_SECONDS = 1;
+const DEFAULT_MAX_RETRIES = 2; // Reduced from 3 for faster failure detection
+
 export function createRetryGuidance(
   retryable: boolean,
   reason: string,
@@ -337,8 +357,8 @@ export function createRetryGuidance(
   return RetryGuidanceSchema.parse({
     retryable,
     reason,
-    retry_after_seconds: options?.retryAfterSeconds,
-    max_retries: options?.maxRetries ?? 3,
+    retry_after_seconds: options?.retryAfterSeconds ?? DEFAULT_RETRY_AFTER_SECONDS,
+    max_retries: options?.maxRetries ?? DEFAULT_MAX_RETRIES,
     strategy: options?.strategy ?? 'exponential_backoff',
   });
 }
