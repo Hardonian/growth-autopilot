@@ -331,12 +331,10 @@ export async function scanSite(options: ScanOptions): Promise<SEOAudit> {
     throw new Error(`No HTML files found in ${sourcePath}`);
   }
 
-  // Scan each page
-  const pages: PageScanResult[] = [];
-  for (const file of htmlFiles) {
-    const page = await scanHtmlFile(file, sourcePath);
-    pages.push(page);
-  }
+  // Scan all pages in parallel (I/O bound operation)
+  const pages: PageScanResult[] = await Promise.all(
+    htmlFiles.map((file) => scanHtmlFile(file, sourcePath))
+  );
 
   // Generate findings
   let allFindings: SEOFinding[] = [];
