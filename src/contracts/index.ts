@@ -1,34 +1,17 @@
 import { z } from 'zod';
-
-/**
- * Growth Autopilot Contracts
- * 
- * Re-exports common suite types and defines domain-specific schemas.
- */
-
-// ============================================================================
-// Re-exports from @autopilot/contracts (Suite Compatibility)
-// ============================================================================
-
-export {
-  // Tenant Context
+import {
+  DEFAULT_SCHEMA_VERSION,
   TenantContextSchema,
   type TenantContext,
   validateTenantContext,
-  
-  // Event Envelope
   EventEnvelopeSchema,
   type EventEnvelope,
   type EventMetadata,
   createEventEnvelope,
-  
-  // Run Manifest
   RunManifestSchema,
   type RunManifest,
   type Output,
   createRunManifest,
-  
-  // Report Envelope
   ReportEnvelopeSchema,
   type ReportEnvelope,
   type ReportType,
@@ -36,19 +19,49 @@ export {
   type EvidenceLink,
   type Finding,
   createReportEnvelope,
-  
-  // Job Request - use suite's canonical version
   JobRequestSchema,
   type JobRequest,
   type JobType,
   type JobPriority,
   createJobRequest,
-  
-  // Utilities
+  JobRequestBundleSchema,
+  type JobRequestBundle,
   canonicalizeForHash,
   stableHash,
   serializeDeterministic,
-} from '@autopilot/contracts';
+} from './compat.js';
+
+export {
+  DEFAULT_SCHEMA_VERSION,
+  TenantContextSchema,
+  type TenantContext,
+  validateTenantContext,
+  EventEnvelopeSchema,
+  type EventEnvelope,
+  type EventMetadata,
+  createEventEnvelope,
+  RunManifestSchema,
+  type RunManifest,
+  type Output,
+  createRunManifest,
+  ReportEnvelopeSchema,
+  type ReportEnvelope,
+  type ReportType,
+  type Severity,
+  type EvidenceLink,
+  type Finding,
+  createReportEnvelope,
+  JobRequestSchema,
+  type JobRequest,
+  type JobType,
+  type JobPriority,
+  createJobRequest,
+  JobRequestBundleSchema,
+  type JobRequestBundle,
+  canonicalizeForHash,
+  stableHash,
+  serializeDeterministic,
+};
 
 // ============================================================================
 // Domain-Specific Schemas (Growth-specific)
@@ -280,3 +293,6 @@ export const GrowthProfileSchema = z.object({
 });
 
 export type GrowthProfile = z.infer<typeof GrowthProfileSchema>;
+
+export const ProfileSchema = GrowthProfileSchema;
+export type Profile = GrowthProfile;

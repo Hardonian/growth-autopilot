@@ -1,0 +1,108 @@
+{
+  "canonical_hash": "70a72c84c17580f6d4d6bc9faaa9ee9cd4641b6e7a6ca61d2a922cc3776276b2",
+  "canonical_hash_algorithm": "sha256",
+  "canonicalization": "sorted_keys",
+  "created_at": "2024-01-01T00:00:00.000Z",
+  "findings": [
+    {
+      "description": "Detected 1 SEO findings across 5 URLs.",
+      "evidence": [
+        {
+          "description": "Missing meta description",
+          "path": "/about",
+          "type": "url"
+        }
+      ],
+      "id": "finding-1",
+      "related_job_types": [
+        "autopilot.growth.seo_scan"
+      ],
+      "severity": "warning",
+      "title": "SEO scan findings detected"
+    },
+    {
+      "description": "Biggest drop-off at signup_complete with 50% drop-off.",
+      "evidence": [
+        {
+          "description": "Calculated overall conversion",
+          "path": "overall_conversion_rate",
+          "type": "calculation",
+          "value": 20
+        }
+      ],
+      "id": "finding-2",
+      "related_job_types": [
+        "autopilot.growth.experiment_propose"
+      ],
+      "severity": "warning",
+      "title": "Funnel drop-off identified"
+    },
+    {
+      "description": "Drafted meta_description content using jobforge profile.",
+      "evidence": [
+        {
+          "description": "Profile: jobforge",
+          "path": "profile",
+          "type": "json_path",
+          "value": "jobforge"
+        },
+        {
+          "description": "Content type: meta_description",
+          "path": "content_type",
+          "type": "json_path",
+          "value": "meta_description"
+        }
+      ],
+      "id": "finding-3",
+      "related_job_types": [
+        "autopilot.growth.content_draft"
+      ],
+      "severity": "info",
+      "title": "Content draft prepared"
+    }
+  ],
+  "inputs": {
+    "event_count": 1,
+    "notes": [
+      "seo_scan",
+      "content_draft"
+    ],
+    "run_manifest_count": 1
+  },
+  "module_id": "growth",
+  "project_id": "growth",
+  "recommendations": [
+    {
+      "description": "Submit JobForge request for autopilot.growth.seo_scan.",
+      "id": "recommendation-1",
+      "job_type": "autopilot.growth.seo_scan",
+      "requires_policy_token": false,
+      "title": "Queue autopilot.growth.seo_scan request"
+    },
+    {
+      "description": "Submit JobForge request for autopilot.growth.experiment_propose.",
+      "id": "recommendation-2",
+      "job_type": "autopilot.growth.experiment_propose",
+      "requires_policy_token": false,
+      "title": "Queue autopilot.growth.experiment_propose request"
+    },
+    {
+      "description": "Submit JobForge request for autopilot.growth.content_draft.",
+      "id": "recommendation-3",
+      "job_type": "autopilot.growth.content_draft",
+      "requires_policy_token": false,
+      "title": "Queue autopilot.growth.content_draft request"
+    }
+  ],
+  "report_id": "report-stable",
+  "report_type": "growth.analysis",
+  "schema_version": "2024-09-01",
+  "summary": {
+    "content_drafts": 1,
+    "experiment_proposals": 0,
+    "funnel_biggest_drop_off_step": "signup_complete",
+    "seo_findings": 1
+  },
+  "tenant_id": "acme",
+  "trace_id": "trace-123"
+}

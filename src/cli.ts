@@ -2,6 +2,8 @@
 
 import { Command } from 'commander';
 import * as fs from 'fs/promises';
+import * as path from 'path';
+import { ZodError } from 'zod';
 import { scanSite } from './seo/index.js';
 import { analyzeFunnel } from './funnel/index.js';
 import { proposeExperiments } from './experiments/index.js';
@@ -12,7 +14,8 @@ import {
   createContentDraftJob,
   serializeJobRequest,
 } from './jobforge/index.js';
-import { TenantContextSchema } from './contracts/index.js';
+import { TenantContextSchema, serializeDeterministic } from './contracts/index.js';
+import { analyze, parseAnalyzeInputs, renderReport } from './jobforge/analyze.js';
 
 const program = new Command();
 
@@ -50,6 +53,29 @@ function validateTenantContext(options: BaseOptions): { tenant_id: string; proje
   }
 
   return context;
+}
+
+function formatErrorMessage(error: unknown): string {
+  if (error instanceof ZodError) {
+    return `Validation error: ${error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`).join('; ')}`;
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return 'Unknown error';
+}
+
+function logError(error: unknown): void {
+  const message = formatErrorMessage(error);
+  // eslint-disable-next-line no-console
+  console.error('Error:', message);
+
+  if (process.env.DEBUG) {
+    // eslint-disable-next-line no-console
+    console.error(error);
+  }
 }
 
 // SEO Scan command
@@ -111,8 +137,7 @@ program
         console.log(`\nJobForge request written to ${jobPath}`);
       }
     } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Error:', (error as Error).message);
+      logError(error);
       process.exit(1);
     }
   });
@@ -176,8 +201,7 @@ program
         console.log(`  ${step.step_name}: ${step.unique_users} users (${Math.round(step.drop_off_rate * 100)}% drop-off)`);
       }
     } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Error:', (error as Error).message);
+      logError(error);
       process.exit(1);
     }
   });
@@ -245,8 +269,7 @@ program
         console.log(`\nJobForge request written to ${jobPath}`);
       }
     } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Error:', (error as Error).message);
+      logError(error);
       process.exit(1);
     }
   });
@@ -345,9 +368,66 @@ program
         console.log(`\nJobForge request written to ${jobPath}`);
       }
     } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Error:', (error as Error).message);
+      logError(error);
       process.exit(1);
+    }
+  });
+
+interface AnalyzeOptions extends BaseOptions {
+  inputs: string;
+  trace: string;
+  out: string;
+  stableOutput: boolean;
+  renderMd: boolean;
+}
+
+program
+  .command('analyze')
+  .description('Generate JobForge-compatible request bundle and report (dry-run)')
+  .requiredOption('--inputs <path>', 'Path to analysis input JSON')
+  .requiredOption('--tenant <id>', 'Tenant ID (or GROWTH_TENANT_ID env var)')
+  .requiredOption('--project <id>', 'Project ID (or GROWTH_PROJECT_ID env var)')
+  .requiredOption('--trace <id>', 'Trace ID for JobForge correlation')
+  .option('--out <dir>', 'Output directory', './jobforge-output')
+  .option('--stable-output', 'Remove nondeterministic fields for fixtures/docs', false)
+  .option('--no-render-md', 'Skip Markdown report rendering')
+  .action(async (options: AnalyzeOptions) => {
+    try {
+      const tenantContext = validateTenantContext(options);
+      const inputsContent = await fs.readFile(options.inputs, 'utf-8');
+      const parsedInputs = parseAnalyzeInputs(inputsContent);
+
+      const result = await analyze(parsedInputs, {
+        tenant_id: tenantContext.tenant_id,
+        project_id: tenantContext.project_id,
+        trace_id: options.trace,
+        stable_output: options.stableOutput,
+      });
+
+      await fs.mkdir(options.out, { recursive: true });
+
+      const requestBundlePath = path.join(options.out, 'request-bundle.json');
+      const reportPath = path.join(options.out, 'report.json');
+      const reportMdPath = path.join(options.out, 'report.md');
+
+      await fs.writeFile(requestBundlePath, serializeDeterministic(result.jobRequestBundle));
+      await fs.writeFile(reportPath, serializeDeterministic(result.reportEnvelope));
+
+      if (options.renderMd) {
+        await fs.writeFile(reportMdPath, renderReport(result.reportEnvelope, 'md'));
+      }
+
+      // eslint-disable-next-line no-console
+      console.log(`JobForge request bundle written to ${requestBundlePath}`);
+      // eslint-disable-next-line no-console
+      console.log(`Report written to ${reportPath}`);
+      if (options.renderMd) {
+        // eslint-disable-next-line no-console
+        console.log(`Markdown report written to ${reportMdPath}`);
+      }
+    } catch (error) {
+      logError(error);
+      process.exit(error instanceof ZodError ? 2 : 1);
     }
   });
 
@@ -364,7 +444,9 @@ program.on('--help', () => {
   // eslint-disable-next-line no-console
   console.log('  $ growth propose-experiments --funnel ./funnel-metrics.json --tenant acme --project app');
   // eslint-disable-next-line no-console
-  console.log('  $ growth draft-content --profile readylayer --type onboarding-email --goal "Welcome new users"');
+  console.log('  $ growth draft-content --profile readylayer --type onboarding_email --goal "Welcome new users"');
+  // eslint-disable-next-line no-console
+  console.log('  $ growth analyze --inputs ./fixtures/jobforge/inputs.json --tenant acme --project app --trace trace-123 --out ./out');
   // eslint-disable-next-line no-console
   console.log('');
   // eslint-disable-next-line no-console
