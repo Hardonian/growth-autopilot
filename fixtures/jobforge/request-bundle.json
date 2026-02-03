@@ -1,6 +1,6 @@
 {
   "bundle_id": "bundle-stable",
-  "canonical_hash": "0f1d408f763a48f30d6257c505a8763b4e3e3779d5cc3aea414f2741a9617433",
+  "canonical_hash": "3a628a9f563d98a78e344a9f1328eceac8dad765b6682521d8e91e74c2ed9104",
   "canonical_hash_algorithm": "sha256",
   "canonicalization": "sorted_keys",
   "created_at": "2024-01-01T00:00:00.000Z",
@@ -82,6 +82,7 @@
         "context": {
           "correlation_id": "correlation-1",
           "notes": "SEO scan identified 1 findings",
+          "related_audit_id": "audit-stable",
           "trace_id": "trace-123",
           "triggered_by": "growth-autopilot"
         },
