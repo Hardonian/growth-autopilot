@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 import {
+  DEFAULT_SCHEMA_VERSION,
   JobRequestBundleSchema,
   ReportEnvelopeSchema,
   stableHash,
@@ -17,10 +18,11 @@ function readJson(filePath: string): unknown {
 
 describe('JobForge fixtures', () => {
   it('validates stable request bundle fixture', () => {
-    const bundlePath = path.join(fixturesDir, 'output', 'request-bundle.json');
+    const bundlePath = path.join(fixturesDir, 'request-bundle.json');
     const bundle = readJson(bundlePath);
 
     const parsed = JobRequestBundleSchema.parse(bundle);
+    expect(parsed.schema_version).toBe(DEFAULT_SCHEMA_VERSION);
     const validation = validateBundle(parsed);
     expect(validation.success).toBe(true);
 
@@ -30,10 +32,11 @@ describe('JobForge fixtures', () => {
   });
 
   it('validates stable report fixture', () => {
-    const reportPath = path.join(fixturesDir, 'output', 'report.json');
+    const reportPath = path.join(fixturesDir, 'report.json');
     const report = readJson(reportPath);
 
     const parsed = ReportEnvelopeSchema.parse(report);
+    expect(parsed.schema_version).toBe(DEFAULT_SCHEMA_VERSION);
     const { canonical_hash, canonical_hash_algorithm, ...rest } = parsed;
     expect(canonical_hash_algorithm).toBe('sha256');
     expect(canonical_hash).toBe(stableHash(rest));

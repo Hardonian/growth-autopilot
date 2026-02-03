@@ -7,6 +7,7 @@ import { z } from 'zod';
  */
 
 export const DEFAULT_SCHEMA_VERSION = '2024-09-01';
+export const schema_version = DEFAULT_SCHEMA_VERSION;
 
 export const TenantContextSchema = z.object({
   tenant_id: z.string().min(1),

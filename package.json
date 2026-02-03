@@ -21,6 +21,8 @@
     "verify:fast": "pnpm run lint && pnpm run typecheck && pnpm run build",
     "verify:full": "pnpm run verify:fast && pnpm run test",
     "docs:verify": "node scripts/docs-verify.mjs",
+    "contracts:compat": "tsx scripts/contracts-compat.ts",
+    "fixtures:export": "tsx scripts/fixtures-export.ts",
     "runnerless:audit": "echo 'Install @autopilot/audit-cli and run: autopilot-audit runnerless .'",
     "prepublishOnly": "pnpm run build"
   },

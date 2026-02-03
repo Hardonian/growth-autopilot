@@ -241,6 +241,12 @@ Outputs:
 - `jobforge-output/report.json`
 - `jobforge-output/report.md`
 
+Stability + schema guarantees:
+- `schema_version: 2024-09-01` (pinned canonical contract version)
+- `canonical_hash` uses `sha256` over sorted keys
+- `--stable-output` removes nondeterministic fields for fixture snapshots
+- The module never executes jobs; it only emits JobForge request bundles
+
 See `docs/jobforge-integration.md` for JobForge ingestion details.
 
 ## Architecture

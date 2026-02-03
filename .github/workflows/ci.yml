@@ -28,6 +28,12 @@ jobs:
       - name: Verify (fast)
         run: pnpm run verify:fast
 
+      - name: Contracts compatibility
+        run: pnpm run contracts:compat
+
+      - name: Verify docs
+        run: pnpm run docs:verify
+
   verify-full:
     runs-on: ubuntu-latest
     needs: verify-fast
