@@ -470,7 +470,7 @@ export function createExperimentPlan(options: ExperimentPlanOptions): Experiment
     const { tenantContext, funnelMetrics, proposals } = options;
 
     // Validate inputs
-    if (!proposals || proposals.length === 0) {
+    if (proposals === undefined || proposals.length === 0) {
       // Return degraded response with actionable guidance
       return createDegradedResponse(
         'growth.experiment_plan',
@@ -486,7 +486,7 @@ export function createExperimentPlan(options: ExperimentPlanOptions): Experiment
           }
         ),
         {
-          funnel_metrics_available: !!funnelMetrics,
+          funnel_metrics_available: funnelMetrics !== undefined,
           proposals_count: proposals?.length ?? 0,
         }
       );

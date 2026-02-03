@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   TenantContextSchema,
+  TenantIdSchema,
+  ProjectIdSchema,
   SEOFindingSchema,
   SEOAuditSchema,
   FunnelStepSchema,
@@ -10,6 +12,12 @@ import {
   JobRequestSchema,
   ProfileSchema,
   SeveritySchema,
+  CapabilityMetadataSchema,
+  DegradedResponseSchema,
+  RetryGuidanceSchema,
+  createCapabilityMetadata,
+  createDegradedResponse,
+  createRetryGuidance,
 } from '../src/contracts/index.js';
 
 describe('Contract Schemas', () => {
@@ -474,6 +482,203 @@ describe('Contract Schemas', () => {
 
       const result = ProfileSchema.safeParse(profile);
       expect(result.success).toBe(true);
+    });
+  });
+});
+
+describe('Canonical Contract Compliance', () => {
+  describe('TenantIdSchema', () => {
+    it('should validate valid tenant IDs', () => {
+      expect(TenantIdSchema.safeParse('tenant-123').success).toBe(true);
+      expect(TenantIdSchema.safeParse('acme_corp').success).toBe(true);
+      expect(TenantIdSchema.safeParse('test-tenant_01').success).toBe(true);
+    });
+
+    it('should reject invalid tenant IDs', () => {
+      expect(TenantIdSchema.safeParse('').success).toBe(false);
+      expect(TenantIdSchema.safeParse('Tenant With Spaces').success).toBe(false);
+      expect(TenantIdSchema.safeParse('Tenant.With.Dots').success).toBe(false);
+      expect(TenantIdSchema.safeParse('Tenant@Symbol').success).toBe(false);
+    });
+  });
+
+  describe('ProjectIdSchema', () => {
+    it('should validate valid project IDs', () => {
+      expect(ProjectIdSchema.safeParse('project-456').success).toBe(true);
+      expect(ProjectIdSchema.safeParse('growth_autopilot').success).toBe(true);
+    });
+
+    it('should reject invalid project IDs', () => {
+      expect(ProjectIdSchema.safeParse('').success).toBe(false);
+      expect(ProjectIdSchema.safeParse('Project With Spaces').success).toBe(false);
+    });
+  });
+
+  describe('CapabilityMetadataSchema', () => {
+    it('should validate complete capability metadata', () => {
+      const metadata = {
+        capability_id: 'growth.experiment_plan',
+        version: '1.0.0',
+        schema_version: '2024-09-01',
+        supported_job_types: ['autopilot.growth.experiment_run'],
+        deprecated: false,
+      };
+
+      const result = CapabilityMetadataSchema.safeParse(metadata);
+      expect(result.success).toBe(true);
+    });
+
+    it('should validate with createCapabilityMetadata', () => {
+      const metadata = createCapabilityMetadata(
+        'test.capability',
+        ['job.type.one', 'job.type.two'],
+        { version: '2.0.0' }
+      );
+
+      expect(metadata.capability_id).toBe('test.capability');
+      expect(metadata.version).toBe('2.0.0');
+      expect(metadata.supported_job_types).toHaveLength(2);
+      expect(metadata.deprecated).toBe(false);
+    });
+
+    it('should support deprecated capabilities', () => {
+      const metadata = createCapabilityMetadata(
+        'old.capability',
+        ['job.type'],
+        { deprecated: true, migrationGuide: 'Use new.capability instead' }
+      );
+
+      expect(metadata.deprecated).toBe(true);
+      expect(metadata.migration_guide).toBe('Use new.capability instead');
+    });
+  });
+
+  describe('RetryGuidanceSchema', () => {
+    it('should validate complete retry guidance', () => {
+      const guidance = {
+        retryable: true,
+        retry_after_seconds: 60,
+        max_retries: 3,
+        strategy: 'exponential_backoff',
+        reason: 'Upstream service temporarily unavailable',
+      };
+
+      const result = RetryGuidanceSchema.safeParse(guidance);
+      expect(result.success).toBe(true);
+    });
+
+    it('should accept valid strategies', () => {
+      const strategies = ['immediate', 'exponential_backoff', 'fixed_interval'];
+
+      for (const strategy of strategies) {
+        const guidance = {
+          retryable: true,
+          reason: 'Test',
+          strategy,
+        };
+
+        expect(RetryGuidanceSchema.safeParse(guidance).success).toBe(true);
+      }
+    });
+
+    it('should create retry guidance with defaults', () => {
+      const guidance = createRetryGuidance(true, 'Test retry');
+
+      expect(guidance.retryable).toBe(true);
+      expect(guidance.reason).toBe('Test retry');
+      expect(guidance.max_retries).toBe(3);
+      expect(guidance.strategy).toBe('exponential_backoff');
+    });
+  });
+
+  describe('DegradedResponseSchema', () => {
+    it('should validate complete degraded response', () => {
+      const response = {
+        success: false,
+        degraded: true,
+        capability_id: 'growth.experiment_plan',
+        error_code: 'UPSTREAM_UNAVAILABLE',
+        message: 'Service temporarily unavailable',
+        retry_guidance: {
+          retryable: true,
+          retry_after_seconds: 60,
+          max_retries: 3,
+          strategy: 'exponential_backoff',
+          reason: 'Upstream service unavailable',
+        },
+        timestamp: '2024-01-01T00:00:00Z',
+      };
+
+      const result = DegradedResponseSchema.safeParse(response);
+      expect(result.success).toBe(true);
+    });
+
+    it('should accept valid error codes', () => {
+      const codes = ['UPSTREAM_UNAVAILABLE', 'DEPENDENCY_TIMEOUT', 'RATE_LIMITED', 'CIRCUIT_OPEN'];
+
+      for (const errorCode of codes) {
+        const response = {
+          success: false,
+          degraded: true,
+          capability_id: 'test',
+          error_code: errorCode,
+          message: 'Test',
+          retry_guidance: {
+            retryable: true,
+            reason: 'Test',
+          },
+          timestamp: '2024-01-01T00:00:00Z',
+        };
+
+        expect(DegradedResponseSchema.safeParse(response).success).toBe(true);
+      }
+    });
+
+    it('should create degraded response with createDegradedResponse', () => {
+      const response = createDegradedResponse(
+        'test.capability',
+        'RATE_LIMITED',
+        'Rate limit exceeded',
+        createRetryGuidance(true, 'Wait and retry', {
+          retryAfterSeconds: 120,
+          maxRetries: 5,
+          strategy: 'fixed_interval',
+        }),
+        { limit: 100, current: 150 }
+      );
+
+      expect(response.success).toBe(false);
+      expect(response.degraded).toBe(true);
+      expect(response.capability_id).toBe('test.capability');
+      expect(response.error_code).toBe('RATE_LIMITED');
+      expect(response.fallback_data).toBeDefined();
+      expect(response.fallback_data).toHaveProperty('limit');
+    });
+
+    it('should include fallback data when provided', () => {
+      const response = {
+        success: false,
+        degraded: true,
+        capability_id: 'test',
+        error_code: 'UPSTREAM_UNAVAILABLE',
+        message: 'Test',
+        retry_guidance: {
+          retryable: true,
+          reason: 'Test',
+        },
+        timestamp: '2024-01-01T00:00:00Z',
+        fallback_data: {
+          cache_available: true,
+          stale_data_timestamp: '2024-01-01T00:00:00Z',
+        },
+      };
+
+      const result = DegradedResponseSchema.safeParse(response);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.fallback_data).toBeDefined();
+        expect(result.data.fallback_data).toHaveProperty('cache_available');
+      }
     });
   });
 });
