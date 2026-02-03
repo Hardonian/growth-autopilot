@@ -4,19 +4,71 @@ import { z } from 'zod';
 /**
  * Compatibility shim for @autopilot/contracts.
  * Replace this module with direct imports from @autopilot/contracts when available.
+ * 
+ * Aligned with @autopilot/contracts@0.1.0 canonical schemas.
  */
 
 export const DEFAULT_SCHEMA_VERSION = '2024-09-01';
 export const schema_version = DEFAULT_SCHEMA_VERSION;
 
+// ============================================================================
+// Capability Metadata Schema (for schema compliance tracking)
+// ============================================================================
+
+export const CapabilityMetadataSchema = z.object({
+  capability_id: z.string().min(1),
+  version: z.string().default('1.0.0'),
+  schema_version: z.string().default(DEFAULT_SCHEMA_VERSION),
+  supported_job_types: z.array(z.string()),
+  deprecated: z.boolean().default(false),
+  migration_guide: z.string().optional(),
+});
+
+export type CapabilityMetadata = z.infer<typeof CapabilityMetadataSchema>;
+
+export function createCapabilityMetadata(
+  capabilityId: string,
+  supportedJobTypes: string[],
+  options?: { version?: string; deprecated?: boolean; migrationGuide?: string }
+): CapabilityMetadata {
+  return CapabilityMetadataSchema.parse({
+    capability_id: capabilityId,
+    version: options?.version ?? '1.0.0',
+    schema_version: DEFAULT_SCHEMA_VERSION,
+    supported_job_types: supportedJobTypes,
+    deprecated: options?.deprecated ?? false,
+    migration_guide: options?.migrationGuide,
+  });
+}
+
+// ============================================================================
+// Primitive Types (aligned with canonical contracts)
+// ============================================================================
+
+export const TenantIdSchema = z
+  .string()
+  .min(1)
+  .regex(/^[a-z0-9-_]+$/);
+export const ProjectIdSchema = z
+  .string()
+  .min(1)
+  .regex(/^[a-z0-9-_]+$/);
+
+export type TenantId = z.infer<typeof TenantIdSchema>;
+export type ProjectId = z.infer<typeof ProjectIdSchema>;
+
+// ============================================================================
+// Tenant Context (Multi-tenant Safety)
+// ============================================================================
+
 export const TenantContextSchema = z.object({
-  tenant_id: z.string().min(1),
-  project_id: z.string().min(1),
+  tenant_id: TenantIdSchema,
+  project_id: ProjectIdSchema,
 });
 
 export type TenantContext = z.infer<typeof TenantContextSchema>;
 
-export function validateTenantContext(context: TenantContext): TenantContext {
+export function validateTenantContext(context: unknown): TenantContext {
   return TenantContextSchema.parse(context);
 }
 
@@ -225,4 +277,68 @@ export function serializeDeterministic(value: unknown): string {
 
 export function stableHash(value: unknown): string {
   return createHash('sha256').update(canonicalizeForHash(value)).digest('hex');
+}
+
+// ============================================================================
+// Degraded Response Schema (for upstream dependency failures)
+// ============================================================================
+
+export const RetryGuidanceSchema = z.object({
+  retryable: z.boolean(),
+  retry_after_seconds: z.number().optional(),
+  max_retries: z.number().default(3),
+  strategy: z.enum(['immediate', 'exponential_backoff', 'fixed_interval']).default('exponential_backoff'),
+  reason: z.string(),
+});
+
+export type RetryGuidance = z.infer<typeof RetryGuidanceSchema>;
+
+export const DegradedResponseSchema = z.object({
+  success: z.literal(false),
+  degraded: z.literal(true),
+  capability_id: z.string().min(1),
+  error_code: z.enum(['UPSTREAM_UNAVAILABLE', 'DEPENDENCY_TIMEOUT', 'RATE_LIMITED', 'CIRCUIT_OPEN']),
+  message: z.string(),
+  retry_guidance: RetryGuidanceSchema,
+  timestamp: z.string().datetime(),
+  fallback_data: z.record(z.unknown()).optional(),
+});
+
+export type DegradedResponse = z.infer<typeof DegradedResponseSchema>;
+
+export function createDegradedResponse(
+  capabilityId: string,
+  errorCode: DegradedResponse['error_code'],
+  message: string,
+  retryGuidance: RetryGuidance,
+  fallbackData?: Record<string, unknown>
+): DegradedResponse {
+  return DegradedResponseSchema.parse({
+    success: false,
+    degraded: true,
+    capability_id: capabilityId,
+    error_code: errorCode,
+    message,
+    retry_guidance: retryGuidance,
+    timestamp: new Date().toISOString(),
+    fallback_data: fallbackData,
+  });
+}
+
+export function createRetryGuidance(
+  retryable: boolean,
+  reason: string,
+  options?: {
+    retryAfterSeconds?: number;
+    maxRetries?: number;
+    strategy?: RetryGuidance['strategy'];
+  }
+): RetryGuidance {
+  return RetryGuidanceSchema.parse({
+    retryable,
+    reason,
+    retry_after_seconds: options?.retryAfterSeconds,
+    max_retries: options?.maxRetries ?? 3,
+    strategy: options?.strategy ?? 'exponential_backoff',
+  });
 }

@@ -3,7 +3,13 @@ import {
   type FunnelMetrics,
   type TenantContext,
   type EvidenceLink,
+  type DegradedResponse,
+  createDegradedResponse,
+  createRetryGuidance,
+  type CapabilityMetadata,
+  createCapabilityMetadata,
 } from '../contracts/index.js';
+import { z } from 'zod';
 
 /**
  * Options for experiment proposal generation
@@ -393,4 +399,165 @@ export function proposeExperiments(options: ProposalOptions): ExperimentProposal
   }
 
   return proposals;
+}
+
+// ============================================================================
+// Experiment Plan Capability (growth.experiment_plan)
+// ============================================================================
+
+export const ExperimentPlanSchema = z.object({
+  plan_id: z.string().min(1),
+  capability_id: z.literal('growth.experiment_plan'),
+  version: z.string().default('1.0.0'),
+  schema_version: z.string(),
+  created_at: z.string().datetime(),
+  tenant_id: z.string(),
+  project_id: z.string(),
+  funnel_metrics_id: z.string(),
+  plan: z.object({
+    objective: z.string(),
+    target_metric: z.string(),
+    hypothesis_summary: z.string(),
+    estimated_duration_days: z.number(),
+    required_sample_size: z.number(),
+    variants: z.array(z.object({
+      name: z.string(),
+      description: z.string(),
+      traffic_allocation: z.number(),
+    })),
+    success_criteria: z.object({
+      minimum_lift_percent: z.number(),
+      confidence_level: z.number(),
+      primary_metric: z.string(),
+    }),
+  }),
+  validation_status: z.enum(['valid', 'invalid', 'needs_review']),
+  job_requests: z.array(z.record(z.unknown())),
+});
+
+export type ExperimentPlan = z.infer<typeof ExperimentPlanSchema>;
+
+export interface ExperimentPlanOptions {
+  tenantContext: TenantContext;
+  funnelMetrics: FunnelMetrics;
+  proposals: ExperimentProposal[];
+}
+
+export type ExperimentPlanResult = ExperimentPlan | DegradedResponse;
+
+/**
+ * Capability metadata for growth.experiment_plan
+ */
+export const experimentPlanCapability: CapabilityMetadata = createCapabilityMetadata(
+  'growth.experiment_plan',
+  ['autopilot.growth.experiment_run', 'autopilot.growth.experiment_propose'],
+  { version: '1.0.0' }
+);
+
+/**
+ * Check if result is a degraded response
+ */
+export function isDegradedResponse(result: ExperimentPlanResult): result is DegradedResponse {
+  return 'degraded' in result && result.degraded === true;
+}
+
+/**
+ * Create experiment plan from proposals
+ * Degraded behavior: if upstream dependencies fail, returns structured retry guidance
+ */
+export function createExperimentPlan(options: ExperimentPlanOptions): ExperimentPlanResult {
+  try {
+    const { tenantContext, funnelMetrics, proposals } = options;
+
+    // Validate inputs
+    if (!proposals || proposals.length === 0) {
+      // Return degraded response with actionable guidance
+      return createDegradedResponse(
+        'growth.experiment_plan',
+        'UPSTREAM_UNAVAILABLE',
+        'No experiment proposals available. Unable to create experiment plan.',
+        createRetryGuidance(
+          true,
+          'Run funnel analysis first to generate experiment proposals',
+          {
+            retryAfterSeconds: 60,
+            maxRetries: 3,
+            strategy: 'exponential_backoff',
+          }
+        ),
+        {
+          funnel_metrics_available: !!funnelMetrics,
+          proposals_count: proposals?.length ?? 0,
+        }
+      );
+    }
+
+    // Select the highest priority proposal
+    const primaryProposal = proposals[0];
+    
+    // Calculate estimated duration based on confidence
+    const confidenceToDays: Record<string, number> = {
+      low: 21,
+      medium: 14,
+      high: 7,
+    };
+    const estimatedDays = confidenceToDays[primaryProposal.expected_impact.confidence] ?? 14;
+
+    // Calculate required sample size (simplified)
+    const baseSampleSize = 1000;
+    const confidenceMultiplier = primaryProposal.expected_impact.confidence === 'high' ? 1 : 
+                                  primaryProposal.expected_impact.confidence === 'medium' ? 1.5 : 2;
+    const requiredSampleSize = Math.round(baseSampleSize * confidenceMultiplier);
+
+    const plan: ExperimentPlan = {
+      plan_id: `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
+      capability_id: 'growth.experiment_plan',
+      version: '1.0.0',
+      schema_version: '2024-09-01',
+      created_at: new Date().toISOString(),
+      tenant_id: tenantContext.tenant_id,
+      project_id: tenantContext.project_id,
+      funnel_metrics_id: funnelMetrics.id,
+      plan: {
+        objective: `Improve ${primaryProposal.target_step} conversion`,
+        target_metric: primaryProposal.expected_impact.metric,
+        hypothesis_summary: primaryProposal.hypothesis,
+        estimated_duration_days: estimatedDays,
+        required_sample_size: requiredSampleSize,
+        variants: primaryProposal.suggested_variants.map((v, i) => ({
+          name: v.name,
+          description: v.description,
+          traffic_allocation: i === 0 ? 0.5 : 0.5 / (primaryProposal.suggested_variants.length - 1),
+        })),
+        success_criteria: {
+          minimum_lift_percent: primaryProposal.expected_impact.lift_percent,
+          confidence_level: 0.95,
+          primary_metric: primaryProposal.expected_impact.metric,
+        },
+      },
+      validation_status: 'valid',
+      job_requests: [],
+    };
+
+    return ExperimentPlanSchema.parse(plan);
+  } catch (error) {
+    // Return structured degraded response on any error
+    return createDegradedResponse(
+      'growth.experiment_plan',
+      'UPSTREAM_UNAVAILABLE',
+      error instanceof Error ? error.message : 'Unknown error creating experiment plan',
+      createRetryGuidance(
+        true,
+        'Retry with valid funnel metrics and experiment proposals',
+        {
+          retryAfterSeconds: 30,
+          maxRetries: 3,
+          strategy: 'exponential_backoff',
+        }
+      ),
+      {
+        error_type: error instanceof Error ? error.name : 'Unknown',
+      }
+    );
+  }
 }

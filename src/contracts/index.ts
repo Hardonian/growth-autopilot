@@ -2,6 +2,10 @@ import { z } from 'zod';
 import {
   DEFAULT_SCHEMA_VERSION,
   schema_version,
+  TenantIdSchema,
+  ProjectIdSchema,
+  type TenantId,
+  type ProjectId,
   TenantContextSchema,
   type TenantContext,
   validateTenantContext,
@@ -30,11 +34,24 @@ import {
   canonicalizeForHash,
   stableHash,
   serializeDeterministic,
+  CapabilityMetadataSchema,
+  type CapabilityMetadata,
+  createCapabilityMetadata,
+  DegradedResponseSchema,
+  type DegradedResponse,
+  RetryGuidanceSchema,
+  type RetryGuidance,
+  createDegradedResponse,
+  createRetryGuidance,
 } from './compat.js';
 
 export {
   DEFAULT_SCHEMA_VERSION,
   schema_version,
+  TenantIdSchema,
+  ProjectIdSchema,
+  type TenantId,
+  type ProjectId,
   TenantContextSchema,
   type TenantContext,
   validateTenantContext,
@@ -63,6 +80,15 @@ export {
   canonicalizeForHash,
   stableHash,
   serializeDeterministic,
+  CapabilityMetadataSchema,
+  type CapabilityMetadata,
+  createCapabilityMetadata,
+  DegradedResponseSchema,
+  type DegradedResponse,
+  RetryGuidanceSchema,
+  type RetryGuidance,
+  createDegradedResponse,
+  createRetryGuidance,
 };
 
 // ============================================================================
