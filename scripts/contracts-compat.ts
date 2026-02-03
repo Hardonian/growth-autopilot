@@ -40,7 +40,8 @@ function validateBundle(bundle: unknown): void {
   if (canonicalization !== 'sorted_keys') {
     throw new Error(`Unexpected canonicalization in bundle: ${canonicalization}`);
   }
-  const expectedHash = stableHash(rest);
+  // Include canonicalization in the hash computation to match generation logic
+  const expectedHash = stableHash({ ...rest, canonicalization });
   if (canonical_hash !== expectedHash) {
     throw new Error('Bundle canonical_hash does not match canonicalized payload');
   }
@@ -59,7 +60,8 @@ function validateReport(report: unknown): void {
   if (canonicalization !== 'sorted_keys') {
     throw new Error(`Unexpected canonicalization in report: ${canonicalization}`);
   }
-  const expectedHash = stableHash(rest);
+  // Include canonicalization in the hash computation to match generation logic
+  const expectedHash = stableHash({ ...rest, canonicalization });
   if (canonical_hash !== expectedHash) {
     throw new Error('Report canonical_hash does not match canonicalized payload');
   }
