@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import {
   DEFAULT_SCHEMA_VERSION,
+  schema_version,
   TenantContextSchema,
   type TenantContext,
   validateTenantContext,
@@ -33,6 +34,7 @@ import {
 
 export {
   DEFAULT_SCHEMA_VERSION,
+  schema_version,
   TenantContextSchema,
   type TenantContext,
   validateTenantContext,

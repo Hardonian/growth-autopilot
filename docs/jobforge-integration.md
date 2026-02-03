@@ -46,6 +46,34 @@ Validation expectations:
 - `job_type` must be known or marked `job_type_status: "unavailable"`
 - Action job types require `requires_policy_token: true`
 
+## Deterministic Fixtures
+
+To export stable fixtures used by JobForge ingestion tests:
+
+```bash
+pnpm fixtures:export
+```
+
+This writes:
+
+- `fixtures/jobforge/request-bundle.json`
+- `fixtures/jobforge/report.json`
+- `fixtures/jobforge/report.md`
+
+To confirm compatibility against the canonical hash snapshots:
+
+```bash
+pnpm contracts:compat
+```
+
+### Schema Version
+
+The pinned canonical contract version is:
+
+- `schema_version: 2024-09-01`
+
+All exported JobForge outputs must stay on this version until the canonical contracts are updated.
+
 ## Safety Boundaries
 
 - Runnerless: emits requests only, never runs jobs.
@@ -56,3 +84,9 @@ Validation expectations:
 
 This repo ships a compatibility shim under `src/contracts/compat.ts` and `src/jobforge/client.ts` to avoid external dependencies.
 When `@autopilot/contracts` and `@autopilot/jobforge-client` are available, replace the shim imports with the official packages.
+
+To keep the shim aligned with the canonical contracts:
+
+1. Update `schema_version` and the Zod schemas in `src/contracts/compat.ts`.
+2. Re-export any updated fields from `src/contracts/index.ts`.
+3. Re-run `pnpm fixtures:export` and `pnpm contracts:compat` to validate byte-for-byte alignment.
