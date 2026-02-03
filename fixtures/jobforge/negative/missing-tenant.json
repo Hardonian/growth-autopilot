@@ -1,0 +1,12 @@
+{
+  "schema_version": "2024-09-01",
+  "module_id": "growth",
+  "bundle_id": "bundle-negative",
+  "project_id": "growth",
+  "trace_id": "trace-123",
+  "created_at": "2024-01-01T00:00:00.000Z",
+  "requests": [],
+  "canonical_hash": "invalid",
+  "canonical_hash_algorithm": "sha256",
+  "canonicalization": "sorted_keys"
+}

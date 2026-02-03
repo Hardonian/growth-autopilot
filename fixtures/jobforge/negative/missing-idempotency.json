@@ -1,0 +1,35 @@
+{
+  "schema_version": "2024-09-01",
+  "module_id": "growth",
+  "bundle_id": "bundle-negative",
+  "tenant_id": "acme",
+  "project_id": "growth",
+  "trace_id": "trace-123",
+  "created_at": "2024-01-01T00:00:00.000Z",
+  "requests": [
+    {
+      "request": {
+        "tenant_id": "acme",
+        "project_id": "growth",
+        "id": "job-1",
+        "created_at": "2024-01-01T00:00:00.000Z",
+        "job_type": "autopilot.growth.seo_scan",
+        "payload": {
+          "source_path": "/tmp"
+        },
+        "context": {
+          "triggered_by": "growth-autopilot"
+        },
+        "constraints": {
+          "auto_execute": false,
+          "require_approval": true
+        }
+      },
+      "job_type_status": "available",
+      "requires_policy_token": false
+    }
+  ],
+  "canonical_hash": "invalid",
+  "canonical_hash_algorithm": "sha256",
+  "canonicalization": "sorted_keys"
+}

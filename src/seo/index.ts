@@ -325,6 +325,7 @@ export async function scanSite(options: ScanOptions): Promise<SEOAudit> {
     cwd: sourcePath,
     absolute: true,
   });
+  htmlFiles.sort();
 
   if (htmlFiles.length === 0) {
     throw new Error(`No HTML files found in ${sourcePath}`);

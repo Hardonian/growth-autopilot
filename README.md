@@ -37,7 +37,10 @@ growth funnel --events ./events.json --steps "page_view,signup_start,signup_comp
 growth propose-experiments --funnel ./funnel-metrics.json
 
 # Draft content
-growth draft-content --profile jobforge --type onboarding-email --goal "Welcome new users"
+growth draft-content --profile jobforge --type onboarding_email --goal "Welcome new users"
+
+# Emit JobForge request bundle + report (dry-run)
+growth analyze --inputs ./fixtures/jobforge/inputs.json --tenant my-tenant --project my-project --trace trace-123 --out ./jobforge-output
 ```
 
 ## Installation
@@ -132,7 +135,7 @@ Draft content using profiles (template-based, no LLM by default):
 ```bash
 growth draft-content \
   --profile jobforge \
-  --type onboarding-email \
+  --type onboarding_email \
   --goal "Welcome new users and get them to first workflow" \
   --keywords "automation,CI/CD,workflows" \
   --features "Visual designer,Runnerless,Observability" \
@@ -219,6 +222,27 @@ Job requests:
 
 Submit to JobForge when ready to execute.
 
+### JobForge Analyze (Bundle + Report)
+
+Use the dedicated `analyze` command to generate a JobForge request bundle and report envelope:
+
+```bash
+growth analyze \
+  --inputs ./fixtures/jobforge/inputs.json \
+  --tenant acme \
+  --project growth \
+  --trace trace-123 \
+  --out ./jobforge-output \
+  --stable-output
+```
+
+Outputs:
+- `jobforge-output/request-bundle.json`
+- `jobforge-output/report.json`
+- `jobforge-output/report.md`
+
+See `docs/jobforge-integration.md` for JobForge ingestion details.
+
 ## Architecture
 
 ```
@@ -285,7 +309,10 @@ growth seo-scan --help          # SEO scan help
 growth funnel --help            # Funnel analysis help
 growth propose-experiments --help # Experiments help
 growth draft-content --help     # Content drafting help
+growth analyze --help           # JobForge bundle + report
 ```
+
+Command table and examples are documented in `docs/cli.md`.
 
 ## Development
 
@@ -305,8 +332,14 @@ pnpm run typecheck
 # Run tests
 pnpm run test
 
-# Run all checks
-pnpm run ci
+# Fast verification (lint + typecheck + build)
+pnpm run verify:fast
+
+# Full verification (fast + tests)
+pnpm run verify:full
+
+# Docs verification (CLI help + examples)
+pnpm run docs:verify
 ```
 
 ## Testing

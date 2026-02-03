@@ -1,0 +1,123 @@
+{
+  "events": [
+    {
+      "schema_version": "2024-09-01",
+      "event_id": "evt-1",
+      "event_name": "page_view",
+      "occurred_at": "2024-01-01T00:00:00Z",
+      "tenant_id": "acme",
+      "project_id": "growth",
+      "trace_id": "trace-123",
+      "payload": {
+        "url": "/"
+      }
+    }
+  ],
+  "run_manifests": [
+    {
+      "schema_version": "2024-09-01",
+      "manifest_id": "run-1",
+      "tenant_id": "acme",
+      "project_id": "growth",
+      "trace_id": "trace-123",
+      "created_at": "2024-01-01T00:00:00Z",
+      "outputs": []
+    }
+  ],
+  "seo_audit": {
+    "tenant_id": "acme",
+    "project_id": "growth",
+    "id": "audit-1",
+    "scanned_at": "2024-01-01T00:00:00Z",
+    "source_type": "html_export",
+    "source_path": "./examples/site-export",
+    "urls_scanned": 5,
+    "findings": [
+      {
+        "id": "finding-1",
+        "url": "/about",
+        "severity": "warning",
+        "category": "meta_description",
+        "message": "Missing meta description",
+        "current_value": null,
+        "recommendation": "Add a 150-160 character meta description",
+        "evidence": [
+          {
+            "type": "html_element",
+            "path": "meta[name=description]",
+            "description": "No meta description found"
+          }
+        ]
+      }
+    ],
+    "summary": {
+      "critical": 0,
+      "warning": 1,
+      "info": 0,
+      "opportunity": 0
+    }
+  },
+  "seo_scan": {
+    "source_path": "./examples/site-export",
+    "source_type": "html_export"
+  },
+  "funnel_metrics": {
+    "tenant_id": "acme",
+    "project_id": "growth",
+    "id": "funnel-1",
+    "computed_at": "2024-01-01T00:00:00Z",
+    "source_file": "./examples/data/events.json",
+    "funnel_name": "onboarding-funnel",
+    "date_range": {
+      "start": "2024-01-01T00:00:00Z",
+      "end": "2024-01-02T00:00:00Z"
+    },
+    "total_entrances": 100,
+    "total_conversions": 20,
+    "overall_conversion_rate": 0.2,
+    "steps": [
+      {
+        "step_name": "page_view",
+        "event_name": "page_view",
+        "unique_users": 100,
+        "total_events": 120,
+        "drop_off_count": 40,
+        "drop_off_rate": 0.4,
+        "avg_time_to_next_seconds": 30
+      },
+      {
+        "step_name": "signup_start",
+        "event_name": "signup_start",
+        "unique_users": 60,
+        "total_events": 70,
+        "drop_off_count": 20,
+        "drop_off_rate": 0.3333,
+        "avg_time_to_next_seconds": 45
+      },
+      {
+        "step_name": "signup_complete",
+        "event_name": "signup_complete",
+        "unique_users": 40,
+        "total_events": 40,
+        "drop_off_count": 20,
+        "drop_off_rate": 0.5,
+        "avg_time_to_next_seconds": 0
+      }
+    ],
+    "biggest_drop_off_step": "signup_complete",
+    "evidence": [
+      {
+        "type": "calculation",
+        "path": "overall_conversion_rate",
+        "description": "Calculated overall conversion",
+        "value": 20
+      }
+    ]
+  },
+  "content_draft": {
+    "profile": "jobforge",
+    "content_type": "meta_description",
+    "goal": "Improve signup conversion",
+    "keywords": ["automation", "workflows"]
+  }
+}

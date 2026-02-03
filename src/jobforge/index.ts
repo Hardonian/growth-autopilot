@@ -3,8 +3,9 @@ import {
   type TenantContext,
   buildJobRequest,
   createGrowthSEOScanRequest,
-} from '@autopilot/jobforge-client';
+} from './client.js';
 import type { FunnelMetrics, ExperimentProposal, ContentDraft } from '../contracts/index.js';
+import { serializeDeterministic } from '../contracts/index.js';
 
 export interface JobOptions {
   priority?: 'low' | 'normal' | 'high' | 'critical';
@@ -208,7 +209,7 @@ export function createPublishContentJob(
  * Serialize job request to JSON for JobForge
  */
 export function serializeJobRequest(job: JobRequest): string {
-  return JSON.stringify(job, null, 2);
+  return serializeDeterministic(job);
 }
 
 /**
@@ -227,4 +228,4 @@ export function createJobBatch(
 }
 
 // Re-export suite types for convenience
-export type { JobRequest, TenantContext } from '@autopilot/jobforge-client';
+export type { JobRequest, TenantContext } from './client.js';

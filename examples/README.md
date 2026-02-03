@@ -9,7 +9,7 @@ examples/
 ├── site-export/        # Sample HTML export for SEO scanning
 ├── data/              # Sample event data for funnel analysis
 ├── outputs/           # Sample outputs from running the tool
-└── job-requests/      # Sample JobForge job requests
+└── jobforge/          # JobForge analyze inputs + stable outputs
 ```
 
 ## Running Examples
@@ -66,12 +66,26 @@ export GROWTH_PROFILES_DIR="./profiles"
 # Draft onboarding email
 growth draft-content \
   --profile jobforge \
-  --type onboarding-email \
+  --type onboarding_email \
   --goal "Welcome new users and guide them to first workflow" \
   --keywords "automation,workflow,CI/CD" \
   --features "Workflow Designer,Runnerless Execution,Built-in Observability" \
   --output ./examples/outputs/content-draft.json \
   --jobforge
+```
+
+### JobForge Analyze (Bundle + Report)
+
+Generate a JobForge request bundle + report in deterministic mode:
+
+```bash
+growth analyze \
+  --inputs ./examples/jobforge/inputs.json \
+  --tenant acme \
+  --project growth \
+  --trace trace-123 \
+  --out ./examples/jobforge/output \
+  --stable-output
 ```
 
 ## Sample Data Details

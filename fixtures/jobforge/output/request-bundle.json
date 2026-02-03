@@ -1,0 +1,107 @@
+{
+  "bundle_id": "bundle-stable",
+  "canonical_hash": "0f1d408f763a48f30d6257c505a8763b4e3e3779d5cc3aea414f2741a9617433",
+  "canonical_hash_algorithm": "sha256",
+  "canonicalization": "sorted_keys",
+  "created_at": "2024-01-01T00:00:00.000Z",
+  "module_id": "growth",
+  "project_id": "growth",
+  "requests": [
+    {
+      "idempotency_key": "c57f2c39e00f40241e0ecf7fe204c6d238d299ed6c1e05850b37ee30b06d5870",
+      "job_type_status": "available",
+      "request": {
+        "constraints": {
+          "auto_execute": false,
+          "max_cost_usd": 0.01,
+          "require_approval": true
+        },
+        "context": {
+          "notes": "Draft meta_description content",
+          "trace_id": "trace-123",
+          "triggered_by": "growth-autopilot"
+        },
+        "created_at": "2024-01-01T00:00:00.000Z",
+        "id": "job-3",
+        "job_type": "autopilot.growth.content_draft",
+        "payload": {
+          "content_type": "meta_description",
+          "features": [],
+          "goal": "Improve signup conversion",
+          "keywords": [
+            "automation",
+            "workflows"
+          ],
+          "profile_name": "jobforge",
+          "use_llm": false,
+          "variant_count": 1
+        },
+        "priority": "normal",
+        "project_id": "growth",
+        "tenant_id": "acme"
+      },
+      "requires_policy_token": false
+    },
+    {
+      "idempotency_key": "ae8cd79d36dd3d3d55ce00ed2dc8e5ee1651637ea61ebe9ce0ec144c03331994",
+      "job_type_status": "available",
+      "request": {
+        "constraints": {
+          "auto_execute": false,
+          "require_approval": true
+        },
+        "context": {
+          "correlation_id": "correlation-2",
+          "notes": "Generate experiment proposals from funnel analysis",
+          "trace_id": "trace-123",
+          "triggered_by": "growth-autopilot"
+        },
+        "created_at": "2024-01-01T00:00:00.000Z",
+        "id": "job-2",
+        "job_type": "autopilot.growth.experiment_propose",
+        "payload": {
+          "drop_off_threshold": 0.2,
+          "funnel_metrics_id": "funnel-1",
+          "funnel_name": "onboarding-funnel",
+          "max_proposals": 3
+        },
+        "priority": "normal",
+        "project_id": "growth",
+        "tenant_id": "acme"
+      },
+      "requires_policy_token": false
+    },
+    {
+      "idempotency_key": "035a4c8c096ac647b1a19c189bc29416d81e1631820010f2e8444f94d788aca9",
+      "job_type_status": "available",
+      "request": {
+        "constraints": {
+          "auto_execute": false,
+          "require_approval": true
+        },
+        "context": {
+          "correlation_id": "correlation-1",
+          "notes": "SEO scan identified 1 findings",
+          "trace_id": "trace-123",
+          "triggered_by": "growth-autopilot"
+        },
+        "created_at": "2024-01-01T00:00:00.000Z",
+        "id": "job-1",
+        "job_type": "autopilot.growth.seo_scan",
+        "payload": {
+          "check_external_links": false,
+          "max_pages": 1000,
+          "source_path": "./examples/site-export",
+          "source_type": "html_export"
+        },
+        "priority": "normal",
+        "project_id": "growth",
+        "tenant_id": "acme"
+      },
+      "requires_policy_token": false
+    }
+  ],
+  "schema_version": "2024-09-01",
+  "tenant_id": "acme",
+  "trace_id": "trace-123"
+}
