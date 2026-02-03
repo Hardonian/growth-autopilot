@@ -47,6 +47,7 @@ export function createSEOScanJob(
       priority: toSuitePriority(priority),
       triggeredBy: 'growth-autopilot',
       correlationId: options?.relatedAuditId,
+      relatedAuditId: options?.relatedAuditId,
       notes: options?.notes,
     }
   );

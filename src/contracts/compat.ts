@@ -202,7 +202,7 @@ function sortKeys(value: unknown): unknown {
     return value.map((item) => sortKeys(item));
   }
 
-  if (value && typeof value === 'object') {
+  if (value !== null && typeof value === 'object') {
     const record = value as Record<string, unknown>;
     return Object.keys(record)
       .sort()

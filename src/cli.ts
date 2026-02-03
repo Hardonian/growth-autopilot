@@ -36,9 +36,9 @@ function validateTenantContext(options: BaseOptions): { tenant_id: string; proje
   const projectId = options.project ?? process.env.GROWTH_PROJECT_ID;
 
   if (typeof tenantId !== 'string' || tenantId.length === 0 || typeof projectId !== 'string' || projectId.length === 0) {
-    // eslint-disable-next-line no-console
+     
     console.error('Error: tenant_id and project_id are required.');
-    // eslint-disable-next-line no-console
+     
     console.error('Provide via --tenant and --project flags or GROWTH_TENANT_ID and GROWTH_PROJECT_ID env vars.');
     process.exit(1);
   }
@@ -47,7 +47,7 @@ function validateTenantContext(options: BaseOptions): { tenant_id: string; proje
   const result = TenantContextSchema.safeParse(context);
 
   if (!result.success) {
-    // eslint-disable-next-line no-console
+     
     console.error('Error: Invalid tenant context:', result.error.format());
     process.exit(1);
   }
@@ -69,11 +69,11 @@ function formatErrorMessage(error: unknown): string {
 
 function logError(error: unknown): void {
   const message = formatErrorMessage(error);
-  // eslint-disable-next-line no-console
+   
   console.error('Error:', message);
 
   if (process.env.DEBUG) {
-    // eslint-disable-next-line no-console
+     
     console.error(error);
   }
 }
@@ -99,7 +99,7 @@ program
     try {
       const tenantContext = validateTenantContext(options);
 
-      // eslint-disable-next-line no-console
+       
       console.log(`Scanning ${options.type} at ${options.path}...`);
 
       const audit = await scanSite({
@@ -110,19 +110,19 @@ program
 
       // Write audit result
       await fs.writeFile(options.output, JSON.stringify(audit, null, 2));
-      // eslint-disable-next-line no-console
+       
       console.log(`SEO audit written to ${options.output}`);
-      // eslint-disable-next-line no-console
+       
       console.log(`\nSummary:`);
-      // eslint-disable-next-line no-console
+       
       console.log(`  URLs scanned: ${audit.urls_scanned}`);
-      // eslint-disable-next-line no-console
+       
       console.log(`  Critical: ${audit.summary.critical}`);
-      // eslint-disable-next-line no-console
+       
       console.log(`  Warnings: ${audit.summary.warning}`);
-      // eslint-disable-next-line no-console
+       
       console.log(`  Info: ${audit.summary.info}`);
-      // eslint-disable-next-line no-console
+       
       console.log(`  Opportunities: ${audit.summary.opportunity}`);
 
       // Generate job request if requested
@@ -133,7 +133,7 @@ program
         });
         const jobPath = options.output.replace('.json', '-job.json');
         await fs.writeFile(jobPath, serializeJobRequest(job));
-        // eslint-disable-next-line no-console
+         
         console.log(`\nJobForge request written to ${jobPath}`);
       }
     } catch (error) {
@@ -164,9 +164,9 @@ program
       const tenantContext = validateTenantContext(options);
       const steps = options.steps.split(',').map((s: string) => s.trim());
 
-      // eslint-disable-next-line no-console
+       
       console.log(`Analyzing funnel: ${options.name}`);
-      // eslint-disable-next-line no-console
+       
       console.log(`Steps: ${steps.join(' → ')}`);
 
       const metrics = await analyzeFunnel({
@@ -177,27 +177,27 @@ program
       });
 
       await fs.writeFile(options.output, JSON.stringify(metrics, null, 2));
-      // eslint-disable-next-line no-console
+       
       console.log(`\nFunnel metrics written to ${options.output}`);
-      // eslint-disable-next-line no-console
+       
       console.log(`\nResults:`);
-      // eslint-disable-next-line no-console
+       
       console.log(`  Total entrances: ${metrics.total_entrances}`);
-      // eslint-disable-next-line no-console
+       
       console.log(`  Total conversions: ${metrics.total_conversions}`);
-      // eslint-disable-next-line no-console
+       
       console.log(`  Overall conversion: ${(metrics.overall_conversion_rate * 100).toFixed(1)}%`);
 
       if (metrics.biggest_drop_off_step) {
         const dropOffStep = metrics.steps.find((s) => s.step_name === metrics.biggest_drop_off_step);
-        // eslint-disable-next-line no-console
+         
         console.log(`  Biggest drop-off: ${metrics.biggest_drop_off_step} (${(dropOffStep?.drop_off_rate ?? 0) * 100}%)`);
       }
 
-      // eslint-disable-next-line no-console
+       
       console.log(`\nStep breakdown:`);
       for (const step of metrics.steps) {
-        // eslint-disable-next-line no-console
+         
         console.log(`  ${step.step_name}: ${step.unique_users} users (${Math.round(step.drop_off_rate * 100)}% drop-off)`);
       }
     } catch (error) {
@@ -231,7 +231,7 @@ program
       const funnelData = await fs.readFile(options.funnel, 'utf-8');
       const funnelMetrics = JSON.parse(funnelData) as unknown;
 
-      // eslint-disable-next-line no-console
+       
       console.log(`Generating experiment proposals from ${options.funnel}...`);
 
       const proposals = proposeExperiments({
@@ -241,20 +241,20 @@ program
       });
 
       await fs.writeFile(options.output, JSON.stringify(proposals, null, 2));
-      // eslint-disable-next-line no-console
+       
       console.log(`\n${proposals.length} experiment proposal(s) written to ${options.output}`);
 
       for (let i = 0; i < proposals.length; i++) {
         const p = proposals[i];
-        // eslint-disable-next-line no-console
+         
         console.log(`\n${i + 1}. ${p.title}`);
-        // eslint-disable-next-line no-console
+         
         console.log(`   Hypothesis: ${p.hypothesis}`);
-        // eslint-disable-next-line no-console
+         
         console.log(`   Effort: ${p.effort.level} (~${p.effort.days_estimate} days)`);
-        // eslint-disable-next-line no-console
+         
         console.log(`   Expected impact: +${p.expected_impact.lift_percent}% (${p.expected_impact.confidence} confidence)`);
-        // eslint-disable-next-line no-console
+         
         console.log(`   Variants: ${p.suggested_variants.length}`);
       }
 
@@ -265,7 +265,7 @@ program
         });
         const jobPath = options.output.replace('.json', '-job.json');
         await fs.writeFile(jobPath, serializeJobRequest(job));
-        // eslint-disable-next-line no-console
+         
         console.log(`\nJobForge request written to ${jobPath}`);
       }
     } catch (error) {
@@ -310,7 +310,7 @@ program
       const keywords = options.keywords?.split(',').map((s: string) => s.trim()) ?? [];
       const features = options.features?.split(',').map((s: string) => s.trim()) ?? [];
 
-      // eslint-disable-next-line no-console
+       
       console.log(`Drafting ${options.type} using profile: ${options.profile}`);
 
       const draft = await draftContent({
@@ -326,22 +326,22 @@ program
       });
 
       await fs.writeFile(options.output, JSON.stringify(draft, null, 2));
-      // eslint-disable-next-line no-console
+       
       console.log(`\nContent draft written to ${options.output}`);
-      // eslint-disable-next-line no-console
+       
       console.log(`\nDraft preview:`);
       if (draft.draft.headline) {
-        // eslint-disable-next-line no-console
+         
         console.log(`  Headline: ${draft.draft.headline}`);
       }
       if (draft.draft.subject_line) {
-        // eslint-disable-next-line no-console
+         
         console.log(`  Subject: ${draft.draft.subject_line}`);
       }
-      // eslint-disable-next-line no-console
+       
       console.log(`  Body length: ${draft.draft.body.length} characters`);
       if (draft.draft.cta) {
-        // eslint-disable-next-line no-console
+         
         console.log(`  CTA: ${draft.draft.cta}`);
       }
 
@@ -364,7 +364,7 @@ program
         );
         const jobPath = options.output.replace('.json', '-job.json');
         await fs.writeFile(jobPath, serializeJobRequest(job));
-        // eslint-disable-next-line no-console
+         
         console.log(`\nJobForge request written to ${jobPath}`);
       }
     } catch (error) {
@@ -417,12 +417,12 @@ program
         await fs.writeFile(reportMdPath, renderReport(result.reportEnvelope, 'md'));
       }
 
-      // eslint-disable-next-line no-console
+       
       console.log(`JobForge request bundle written to ${requestBundlePath}`);
-      // eslint-disable-next-line no-console
+       
       console.log(`Report written to ${reportPath}`);
       if (options.renderMd) {
-        // eslint-disable-next-line no-console
+         
         console.log(`Markdown report written to ${reportMdPath}`);
       }
     } catch (error) {
@@ -433,29 +433,29 @@ program
 
 // Show help examples
 program.on('--help', () => {
-  // eslint-disable-next-line no-console
+   
   console.log('');
-  // eslint-disable-next-line no-console
+   
   console.log('Examples:');
-  // eslint-disable-next-line no-console
+   
   console.log('  $ growth seo-scan --path ./site-export --tenant acme --project website');
-  // eslint-disable-next-line no-console
+   
   console.log('  $ growth funnel --events ./events.json --steps "page_view,signup_start,signup_complete,first_action"');
-  // eslint-disable-next-line no-console
+   
   console.log('  $ growth propose-experiments --funnel ./funnel-metrics.json --tenant acme --project app');
-  // eslint-disable-next-line no-console
+   
   console.log('  $ growth draft-content --profile readylayer --type onboarding_email --goal "Welcome new users"');
-  // eslint-disable-next-line no-console
+   
   console.log('  $ growth analyze --inputs ./fixtures/jobforge/inputs.json --tenant acme --project app --trace trace-123 --out ./out');
-  // eslint-disable-next-line no-console
+   
   console.log('');
-  // eslint-disable-next-line no-console
+   
   console.log('Environment variables:');
-  // eslint-disable-next-line no-console
+   
   console.log('  GROWTH_TENANT_ID      Default tenant ID');
-  // eslint-disable-next-line no-console
+   
   console.log('  GROWTH_PROJECT_ID     Default project ID');
-  // eslint-disable-next-line no-console
+   
   console.log('  GROWTH_PROFILES_DIR   Path to profiles directory (default: ./profiles)');
 });
 

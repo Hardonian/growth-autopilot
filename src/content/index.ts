@@ -50,10 +50,10 @@ async function loadProfile(profileName: string, profilesDir: string): Promise<Gr
   const profilePath = path.join(profilesDir, `${profileName}.yaml`);
   try {
     const content = await fs.readFile(profilePath, 'utf-8');
-    const parsed = yaml.parse(content);
+    const parsed: unknown = yaml.parse(content);
     return GrowthProfileSchema.parse(parsed);
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
       throw new Error(`Profile not found: ${profileName}.yaml`);
     }
     throw new Error(`Invalid profile ${profileName}: ${(error as Error).message}`);

@@ -429,10 +429,10 @@ export async function analyze(inputs: AnalyzeInputs, options: AnalyzeOptions): P
   });
 
   const normalizedJobs = jobRequests.map((job, index) => normalizeJobRequest(job, options.trace_id, stableOutput, index));
-  const requestItems = normalizedJobs.map((job) => ({
+  const requestItems: JobRequestBundle['requests'] = normalizedJobs.map((job) => ({
     idempotency_key: buildIdempotencyKey(job),
     request: job,
-    job_type_status: KNOWN_JOB_TYPES.has(job.job_type) ? 'available' : 'unavailable',
+    job_type_status: (KNOWN_JOB_TYPES.has(job.job_type) ? 'available' : 'unavailable'),
     requires_policy_token: ACTION_JOB_TYPES.has(job.job_type),
   }));
 
@@ -505,7 +505,15 @@ export function renderReport(report: ReportEnvelope, format: 'md' | 'json' = 'md
   lines.push('');
   const summaryEntries = Object.entries(report.summary);
   for (const [key, value] of summaryEntries) {
-    lines.push(`- ${key}: ${value ?? 'n/a'}`);
+    let displayValue: string;
+    if (value === null || value === undefined) {
+      displayValue = 'n/a';
+    } else if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+      displayValue = String(value);
+    } else {
+      displayValue = JSON.stringify(value);
+    }
+    lines.push(`- ${key}: ${displayValue}`);
   }
   lines.push('');
   lines.push('## Findings');

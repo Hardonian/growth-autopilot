@@ -9,6 +9,7 @@ export interface JobRequestOptions {
   priority?: JobRequest['priority'];
   triggeredBy?: string;
   correlationId?: string;
+  relatedAuditId?: string;
   notes?: string;
   scheduledFor?: string;
   maxCostUsd?: number;
@@ -36,6 +37,7 @@ export function buildJobRequest(
     context: {
       triggered_by: options?.triggeredBy ?? 'growth-autopilot',
       correlation_id: options?.correlationId,
+      related_audit_id: options?.relatedAuditId,
       notes: options?.notes,
     },
     constraints: {
