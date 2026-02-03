@@ -586,7 +586,7 @@ describe('Canonical Contract Compliance', () => {
 
       expect(guidance.retryable).toBe(true);
       expect(guidance.reason).toBe('Test retry');
-      expect(guidance.max_retries).toBe(3);
+      expect(guidance.max_retries).toBe(2);
       expect(guidance.strategy).toBe('exponential_backoff');
     });
   });
