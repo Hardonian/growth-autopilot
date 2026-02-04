@@ -409,9 +409,11 @@ program
       const requestBundlePath = path.join(options.out, 'request-bundle.json');
       const reportPath = path.join(options.out, 'report.json');
       const reportMdPath = path.join(options.out, 'report.md');
+      const runnerMaturityPath = path.join(options.out, 'runner-maturity.json');
 
       await fs.writeFile(requestBundlePath, serializeDeterministic(result.jobRequestBundle));
       await fs.writeFile(reportPath, serializeDeterministic(result.reportEnvelope));
+      await fs.writeFile(runnerMaturityPath, serializeDeterministic(result.runnerMaturityReport));
 
       if (options.renderMd) {
         await fs.writeFile(reportMdPath, renderReport(result.reportEnvelope, 'md'));
@@ -421,6 +423,8 @@ program
       console.log(`JobForge request bundle written to ${requestBundlePath}`);
        
       console.log(`Report written to ${reportPath}`);
+       
+      console.log(`Runner maturity report written to ${runnerMaturityPath}`);
       if (options.renderMd) {
          
         console.log(`Markdown report written to ${reportMdPath}`);

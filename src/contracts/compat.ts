@@ -309,6 +309,55 @@ export const RetryGuidanceSchema = z.object({
 
 export type RetryGuidance = z.infer<typeof RetryGuidanceSchema>;
 
+// ============================================================================
+// Runner Maturity Report (Runner guarantees + metrics in standard format)
+// ============================================================================
+
+export const RunnerMetricSchema = z.object({
+  metric: z.string().min(1),
+  description: z.string().min(1),
+  source: z.enum(['report', 'job_request', 'runner', 'external']),
+});
+
+export type RunnerMetric = z.infer<typeof RunnerMetricSchema>;
+
+export const RunnerMaturitySchema = z.object({
+  schema_version: z.string().min(1).default(DEFAULT_SCHEMA_VERSION),
+  module_id: z.string().min(1),
+  tenant_id: z.string().min(1),
+  project_id: z.string().min(1),
+  trace_id: z.string().min(1),
+  created_at: z.string().datetime(),
+  runners: z.array(
+    z.object({
+      runner_id: z.string().min(1),
+      job_type: z.string().min(1),
+      purpose: z.string().min(1),
+      inputs: z.array(z.string().min(1)),
+      outputs: z.array(z.string().min(1)),
+      failure_modes: z.array(z.string().min(1)),
+      idempotency: z.object({
+        strategy: z.enum(['bundle_idempotency_key', 'request_id', 'payload_hash']),
+        key_source: z.string().min(1),
+      }),
+      retry_guidance: RetryGuidanceSchema,
+      metrics: z.object({
+        success: z.array(RunnerMetricSchema),
+        failure: z.array(RunnerMetricSchema),
+      }),
+      finops: z.object({
+        max_cost_usd: z.number().nonnegative(),
+        cost_controls: z.array(z.string().min(1)),
+      }),
+    })
+  ),
+  canonical_hash: z.string().min(1),
+  canonical_hash_algorithm: z.literal('sha256'),
+  canonicalization: z.literal('sorted_keys'),
+});
+
+export type RunnerMaturityReport = z.infer<typeof RunnerMaturitySchema>;
+
 export const DegradedResponseSchema = z.object({
   success: z.literal(false),
   degraded: z.literal(true),

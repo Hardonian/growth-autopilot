@@ -5,6 +5,7 @@ import {
   DEFAULT_SCHEMA_VERSION,
   JobRequestBundleSchema,
   ReportEnvelopeSchema,
+  RunnerMaturitySchema,
   stableHash,
 } from '../src/contracts/index.js';
 import { validateBundle } from '../src/jobforge/analyze.js';
@@ -36,6 +37,17 @@ describe('JobForge fixtures', () => {
     const report = readJson(reportPath);
 
     const parsed = ReportEnvelopeSchema.parse(report);
+    expect(parsed.schema_version).toBe(DEFAULT_SCHEMA_VERSION);
+    const { canonical_hash, canonical_hash_algorithm, ...rest } = parsed;
+    expect(canonical_hash_algorithm).toBe('sha256');
+    expect(canonical_hash).toBe(stableHash(rest));
+  });
+
+  it('validates stable runner maturity fixture', () => {
+    const maturityPath = path.join(fixturesDir, 'runner-maturity.json');
+    const maturity = readJson(maturityPath);
+
+    const parsed = RunnerMaturitySchema.parse(maturity);
     expect(parsed.schema_version).toBe(DEFAULT_SCHEMA_VERSION);
     const { canonical_hash, canonical_hash_algorithm, ...rest } = parsed;
     expect(canonical_hash_algorithm).toBe('sha256');

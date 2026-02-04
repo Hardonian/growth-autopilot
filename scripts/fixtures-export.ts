@@ -31,6 +31,11 @@ async function main(): Promise<void> {
     'utf-8'
   );
   await writeFile(
+    path.join(fixturesDir, 'runner-maturity.json'),
+    serializeDeterministic(result.runnerMaturityReport),
+    'utf-8'
+  );
+  await writeFile(
     path.join(fixturesDir, 'report.md'),
     renderReport(result.reportEnvelope, 'md'),
     'utf-8'

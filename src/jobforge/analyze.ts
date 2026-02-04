@@ -18,6 +18,8 @@ import {
   ReportEnvelopeSchema,
   type JobRequestBundle,
   JobRequestBundleSchema,
+  RunnerMaturitySchema,
+  type RunnerMaturityReport,
   type JobRequest,
   type TenantContext,
   TenantContextSchema,
@@ -25,6 +27,7 @@ import {
   stableHash,
   serializeDeterministic,
 } from '../contracts/index.js';
+import { buildRunnerMaturityBase } from './runner-maturity.js';
 import {
   createSEOScanJob,
   createExperimentProposalJob,
@@ -105,6 +108,7 @@ export interface AnalyzeOptions {
 export interface AnalyzeResult {
   reportEnvelope: ReportEnvelope;
   jobRequestBundle: JobRequestBundle;
+  runnerMaturityReport: RunnerMaturityReport;
 }
 
 function ensureTenantContext(options: AnalyzeOptions): TenantContext {
@@ -447,12 +451,24 @@ export async function analyze(inputs: AnalyzeInputs, options: AnalyzeOptions): P
     requests: stableSortRequests(requestItems),
   });
 
+  const runnerMaturityReport = withCanonicalHash<RunnerMaturityReport>(
+    buildRunnerMaturityBase({
+      moduleId: MODULE_ID,
+      tenantId: tenantContext.tenant_id,
+      projectId: tenantContext.project_id,
+      traceId: options.trace_id,
+      createdAt: stableOutput ? STABLE_TIME : new Date().toISOString(),
+    })
+  );
+
   ReportEnvelopeSchema.parse(reportEnvelope);
   JobRequestBundleSchema.parse(jobRequestBundle);
+  RunnerMaturitySchema.parse(runnerMaturityReport);
 
   return {
     reportEnvelope,
     jobRequestBundle,
+    runnerMaturityReport,
   };
 }
 
