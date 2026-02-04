@@ -95,6 +95,7 @@ describe('JobForge Integration', () => {
       expect(job.payload.source_type).toBe('html_export');
       expect(job.constraints.auto_execute).toBe(false);
       expect(job.constraints.require_approval).toBe(true);
+      expect(job.constraints.max_cost_usd).toBeGreaterThan(0);
     });
 
     it('should create experiment proposal job', () => {
@@ -103,6 +104,7 @@ describe('JobForge Integration', () => {
       expect(job.job_type).toBe('autopilot.growth.experiment_propose');
       expect(job.payload.funnel_metrics_id).toBe('funnel-123');
       expect(job.payload.funnel_name).toBe('signup-funnel');
+      expect(job.constraints.max_cost_usd).toBeGreaterThan(0);
     });
 
     it('should create content draft job', () => {
@@ -143,6 +145,7 @@ describe('JobForge Integration', () => {
       expect(job.payload.experiment_title).toBe('Test Experiment');
       expect(job.payload.hypothesis).toBe('This will improve conversion');
       expect(job.payload.variants).toHaveLength(2);
+      expect(job.constraints.max_cost_usd).toBeGreaterThan(0);
     });
 
     it('should create publish content job', () => {
@@ -152,6 +155,7 @@ describe('JobForge Integration', () => {
       expect(job.payload.draft_id).toBe('draft-123');
       expect(job.payload.destination).toBe('blog');
       expect(job.payload.content).toEqual(mockContentDraft.draft);
+      expect(job.constraints.max_cost_usd).toBeGreaterThan(0);
     });
   });
 

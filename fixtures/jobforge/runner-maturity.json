@@ -1,0 +1,340 @@
+{
+  "canonical_hash": "4a6a641300c313aba1d237d2de7b3704956231b7642523f14affa8ed85b2943e",
+  "canonical_hash_algorithm": "sha256",
+  "canonicalization": "sorted_keys",
+  "created_at": "2024-01-01T00:00:00.000Z",
+  "module_id": "growth",
+  "project_id": "growth",
+  "runners": [
+    {
+      "failure_modes": [
+        "Invalid or missing source_path",
+        "Schema validation failure",
+        "Job type unavailable in JobForge"
+      ],
+      "finops": {
+        "cost_controls": [
+          "max_cost_usd constraint",
+          "require_approval=true"
+        ],
+        "max_cost_usd": 0.5
+      },
+      "idempotency": {
+        "key_source": "tenant_id + project_id + job_type + payload (stable hash)",
+        "strategy": "payload_hash"
+      },
+      "inputs": [
+        "source_path",
+        "source_type",
+        "tenant_id",
+        "project_id"
+      ],
+      "job_type": "autopilot.growth.seo_scan",
+      "metrics": {
+        "failure": [
+          {
+            "description": "Request bundle failed schema or invariants validation.",
+            "metric": "bundle_validation_failed",
+            "source": "runner"
+          },
+          {
+            "description": "job_type_status marked unavailable for seo_scan.",
+            "metric": "job_type_unavailable",
+            "source": "job_request"
+          }
+        ],
+        "success": [
+          {
+            "description": "JobForge request for seo_scan created and validated.",
+            "metric": "job_request_enqueued",
+            "source": "job_request"
+          },
+          {
+            "description": "Number of SEO findings recorded in report.summary.",
+            "metric": "seo_findings_count",
+            "source": "report"
+          }
+        ]
+      },
+      "outputs": [
+        "job_request",
+        "report.findings",
+        "request-bundle.json"
+      ],
+      "purpose": "Scan a site export for SEO issues and emit a JobForge request bundle entry.",
+      "retry_guidance": {
+        "max_retries": 3,
+        "reason": "JobForge queueing failures can be retried safely when using idempotency keys.",
+        "retry_after_seconds": 1,
+        "retryable": true,
+        "strategy": "exponential_backoff"
+      },
+      "runner_id": "growth.seo_scan"
+    },
+    {
+      "failure_modes": [
+        "Missing funnel metrics or invalid funnel metrics file",
+        "Schema validation failure",
+        "Job type unavailable in JobForge"
+      ],
+      "finops": {
+        "cost_controls": [
+          "max_cost_usd constraint",
+          "require_approval=true"
+        ],
+        "max_cost_usd": 0.2
+      },
+      "idempotency": {
+        "key_source": "tenant_id + project_id + job_type + payload (stable hash)",
+        "strategy": "payload_hash"
+      },
+      "inputs": [
+        "funnel_metrics_id",
+        "funnel_name",
+        "tenant_id",
+        "project_id"
+      ],
+      "job_type": "autopilot.growth.experiment_propose",
+      "metrics": {
+        "failure": [
+          {
+            "description": "Input funnel metrics missing or invalid.",
+            "metric": "funnel_metrics_missing",
+            "source": "runner"
+          },
+          {
+            "description": "Request bundle failed schema or invariants validation.",
+            "metric": "bundle_validation_failed",
+            "source": "runner"
+          }
+        ],
+        "success": [
+          {
+            "description": "Experiment proposal job request created and validated.",
+            "metric": "job_request_enqueued",
+            "source": "job_request"
+          },
+          {
+            "description": "Count of proposals captured in report.summary.",
+            "metric": "experiment_proposals_count",
+            "source": "report"
+          }
+        ]
+      },
+      "outputs": [
+        "job_request",
+        "report.findings",
+        "report.recommendations"
+      ],
+      "purpose": "Generate experiment proposals from funnel metrics and emit a JobForge request.",
+      "retry_guidance": {
+        "max_retries": 3,
+        "reason": "JobForge queueing failures can be retried safely when using idempotency keys.",
+        "retry_after_seconds": 1,
+        "retryable": true,
+        "strategy": "exponential_backoff"
+      },
+      "runner_id": "growth.experiment_propose"
+    },
+    {
+      "failure_modes": [
+        "Missing profile or invalid content_type",
+        "Schema validation failure",
+        "LLM provider unavailable (if configured)"
+      ],
+      "finops": {
+        "cost_controls": [
+          "max_cost_usd constraint",
+          "require_approval=true"
+        ],
+        "max_cost_usd": 1
+      },
+      "idempotency": {
+        "key_source": "tenant_id + project_id + job_type + payload (stable hash)",
+        "strategy": "payload_hash"
+      },
+      "inputs": [
+        "profile_name",
+        "content_type",
+        "goal",
+        "tenant_id",
+        "project_id"
+      ],
+      "job_type": "autopilot.growth.content_draft",
+      "metrics": {
+        "failure": [
+          {
+            "description": "Requested content profile not found.",
+            "metric": "profile_missing",
+            "source": "runner"
+          },
+          {
+            "description": "LLM provider failed during draft preparation.",
+            "metric": "llm_provider_error",
+            "source": "runner"
+          }
+        ],
+        "success": [
+          {
+            "description": "Content draft job request created and validated.",
+            "metric": "job_request_enqueued",
+            "source": "job_request"
+          },
+          {
+            "description": "Number of content drafts recorded in report.summary.",
+            "metric": "content_drafts_count",
+            "source": "report"
+          }
+        ]
+      },
+      "outputs": [
+        "job_request",
+        "report.findings",
+        "report.summary.content_drafts"
+      ],
+      "purpose": "Draft content using a profile and emit a JobForge request.",
+      "retry_guidance": {
+        "max_retries": 3,
+        "reason": "JobForge queueing failures can be retried safely when using idempotency keys.",
+        "retry_after_seconds": 1,
+        "retryable": true,
+        "strategy": "exponential_backoff"
+      },
+      "runner_id": "growth.content_draft"
+    },
+    {
+      "failure_modes": [
+        "Missing experiment proposal",
+        "Policy token required for action jobs",
+        "Schema validation failure"
+      ],
+      "finops": {
+        "cost_controls": [
+          "max_cost_usd constraint",
+          "require_approval=true",
+          "policy_token_required"
+        ],
+        "max_cost_usd": 5
+      },
+      "idempotency": {
+        "key_source": "tenant_id + project_id + job_type + payload (stable hash)",
+        "strategy": "payload_hash"
+      },
+      "inputs": [
+        "proposal_id",
+        "variants",
+        "duration_days",
+        "tenant_id",
+        "project_id"
+      ],
+      "job_type": "autopilot.growth.experiment_run",
+      "metrics": {
+        "failure": [
+          {
+            "description": "Action job cannot execute without policy token.",
+            "metric": "policy_token_missing",
+            "source": "runner"
+          },
+          {
+            "description": "Request bundle failed schema or invariants validation.",
+            "metric": "bundle_validation_failed",
+            "source": "runner"
+          }
+        ],
+        "success": [
+          {
+            "description": "Experiment run job request created and validated.",
+            "metric": "job_request_enqueued",
+            "source": "job_request"
+          },
+          {
+            "description": "Action job flagged with requires_policy_token=true.",
+            "metric": "action_job_requires_policy_token",
+            "source": "job_request"
+          }
+        ]
+      },
+      "outputs": [
+        "job_request",
+        "report.recommendations"
+      ],
+      "purpose": "Run a proposed experiment and emit a JobForge request.",
+      "retry_guidance": {
+        "max_retries": 3,
+        "reason": "JobForge queueing failures can be retried safely when using idempotency keys.",
+        "retry_after_seconds": 1,
+        "retryable": true,
+        "strategy": "exponential_backoff"
+      },
+      "runner_id": "growth.experiment_run"
+    },
+    {
+      "failure_modes": [
+        "Missing draft content",
+        "Invalid publish destination",
+        "Policy token required for action jobs"
+      ],
+      "finops": {
+        "cost_controls": [
+          "max_cost_usd constraint",
+          "require_approval=true",
+          "policy_token_required"
+        ],
+        "max_cost_usd": 0.5
+      },
+      "idempotency": {
+        "key_source": "tenant_id + project_id + job_type + payload (stable hash)",
+        "strategy": "payload_hash"
+      },
+      "inputs": [
+        "draft_id",
+        "destination",
+        "tenant_id",
+        "project_id"
+      ],
+      "job_type": "autopilot.growth.publish_content",
+      "metrics": {
+        "failure": [
+          {
+            "description": "Action job cannot execute without policy token.",
+            "metric": "policy_token_missing",
+            "source": "runner"
+          },
+          {
+            "description": "Publish destination rejected by downstream systems.",
+            "metric": "destination_invalid",
+            "source": "runner"
+          }
+        ],
+        "success": [
+          {
+            "description": "Publish content job request created and validated.",
+            "metric": "job_request_enqueued",
+            "source": "job_request"
+          },
+          {
+            "description": "Action job flagged with requires_policy_token=true.",
+            "metric": "action_job_requires_policy_token",
+            "source": "job_request"
+          }
+        ]
+      },
+      "outputs": [
+        "job_request",
+        "report.recommendations"
+      ],
+      "purpose": "Publish drafted content to a destination via JobForge.",
+      "retry_guidance": {
+        "max_retries": 3,
+        "reason": "JobForge queueing failures can be retried safely when using idempotency keys.",
+        "retry_after_seconds": 1,
+        "retryable": true,
+        "strategy": "exponential_backoff"
+      },
+      "runner_id": "growth.publish_content"
+    }
+  ],
+  "schema_version": "2024-09-01",
+  "tenant_id": "acme",
+  "trace_id": "trace-123"
+}

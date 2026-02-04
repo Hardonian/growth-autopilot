@@ -6,6 +6,7 @@ import {
 } from './client.js';
 import type { FunnelMetrics, ExperimentProposal, ContentDraft } from '../contracts/index.js';
 import { serializeDeterministic } from '../contracts/index.js';
+import { RUNNER_COST_CAPS_USD } from './runner-maturity.js';
 
 export interface JobOptions {
   priority?: 'low' | 'normal' | 'high' | 'critical';
@@ -49,6 +50,7 @@ export function createSEOScanJob(
       correlationId: options?.relatedAuditId,
       relatedAuditId: options?.relatedAuditId,
       notes: options?.notes,
+      maxCostUsd: RUNNER_COST_CAPS_USD['autopilot.growth.seo_scan'],
     }
   );
 
@@ -90,6 +92,7 @@ export function createExperimentProposalJob(
       triggeredBy: 'growth-autopilot',
       correlationId: funnelMetrics.id,
       notes: options?.notes,
+      maxCostUsd: RUNNER_COST_CAPS_USD['autopilot.growth.experiment_propose'],
     }
   );
 }
@@ -130,7 +133,9 @@ export function createContentDraftJob(
       priority: toSuitePriority(priority),
       triggeredBy: 'growth-autopilot',
       notes: options?.notes,
-      maxCostUsd: options?.useLLM ? 1.0 : 0.01,
+      maxCostUsd: options?.useLLM
+        ? RUNNER_COST_CAPS_USD['autopilot.growth.content_draft']
+        : 0.01,
     }
   );
 }
@@ -170,6 +175,7 @@ export function createExperimentRunJob(
       correlationId: proposal.funnel_metrics_id,
       notes: options?.notes ?? `Run experiment: ${proposal.title}`,
       deadline: new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000).toISOString(),
+      maxCostUsd: RUNNER_COST_CAPS_USD['autopilot.growth.experiment_run'],
     }
   );
 }
@@ -202,6 +208,7 @@ export function createPublishContentJob(
       triggeredBy: 'growth-autopilot',
       notes: options?.notes ?? `Publish ${contentDraft.content_type} to ${destination}`,
       deadline: options?.publishAt,
+      maxCostUsd: RUNNER_COST_CAPS_USD['autopilot.growth.publish_content'],
     }
   );
 }

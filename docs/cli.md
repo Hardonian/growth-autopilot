@@ -33,4 +33,10 @@ growth analyze \
   --trace trace-123 \
   --out ./jobforge-output \
   --stable-output
+
+# Output files:
+# - request-bundle.json
+# - report.json
+# - report.md
+# - runner-maturity.json
 ```

@@ -1,6 +1,6 @@
 {
   "bundle_id": "bundle-stable",
-  "canonical_hash": "3a628a9f563d98a78e344a9f1328eceac8dad765b6682521d8e91e74c2ed9104",
+  "canonical_hash": "6337da6bbc79491c409349b755cfe66f7595f765c06f141a31b05a942f25fd2c",
   "canonical_hash_algorithm": "sha256",
   "canonicalization": "sorted_keys",
   "created_at": "2024-01-01T00:00:00.000Z",
@@ -48,6 +48,7 @@
       "request": {
         "constraints": {
           "auto_execute": false,
+          "max_cost_usd": 0.2,
           "require_approval": true
         },
         "context": {
@@ -77,6 +78,7 @@
       "request": {
         "constraints": {
           "auto_execute": false,
+          "max_cost_usd": 0.5,
           "require_approval": true
         },
         "context": {
