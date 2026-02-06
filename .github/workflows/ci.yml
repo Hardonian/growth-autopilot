@@ -28,6 +28,15 @@ jobs:
       - name: Verify (fast)
         run: pnpm run verify:fast
 
+      - name: Test
+        run: pnpm run test
+
+      - name: Plan smoke
+        run: pnpm run plan -- --smoke
+
+      - name: Run smoke
+        run: pnpm run run -- --smoke
+
       - name: Contracts check
         run: pnpm run contracts:check
 

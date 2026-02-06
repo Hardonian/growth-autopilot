@@ -20,6 +20,8 @@
     "check": "pnpm run lint && pnpm run typecheck && pnpm run test",
     "verify:fast": "pnpm run lint && pnpm run typecheck && pnpm run build",
     "verify:full": "pnpm run verify:fast && pnpm run test",
+    "plan": "tsx src/cli.ts plan",
+    "run": "tsx src/cli.ts run",
     "docs:verify": "node scripts/docs-verify.mjs",
     "contracts:check": "tsx scripts/contracts-check.ts",
     "contracts:compat": "tsx scripts/contracts-compat.ts",
