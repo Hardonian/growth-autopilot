@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "growth-autopilot/config",
+  "title": "Growth Autopilot Configuration",
+  "description": "Configuration schema for growth-autopilot tenant context and runtime settings",
+  "type": "object",
+  "required": ["tenant_id", "project_id"],
+  "properties": {
+    "tenant_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9-_]+$",
+      "description": "Tenant identifier (lowercase alphanumeric, hyphens, underscores)"
+    },
+    "project_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9-_]+$",
+      "description": "Project identifier (lowercase alphanumeric, hyphens, underscores)"
+    },
+    "profiles_dir": {
+      "type": "string",
+      "description": "Path to profiles directory"
+    },
+    "schema_version": {
+      "type": "string",
+      "const": "2024-09-01",
+      "description": "Pinned contract schema version"
+    }
+  },
+  "additionalProperties": false
+}

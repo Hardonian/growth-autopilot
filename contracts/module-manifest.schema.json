@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "growth-autopilot/module-manifest",
+  "title": "Module Manifest",
+  "description": "Run manifest describing outputs produced by a module execution",
+  "type": "object",
+  "required": ["schema_version", "manifest_id", "tenant_id", "project_id", "created_at", "outputs"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Contract schema version"
+    },
+    "manifest_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique manifest identifier"
+    },
+    "tenant_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Tenant identifier"
+    },
+    "project_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Project identifier"
+    },
+    "trace_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Distributed trace identifier"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 creation timestamp"
+    },
+    "outputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "type"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "type": { "type": "string", "minLength": 1 },
+          "uri": { "type": "string" },
+          "checksum": { "type": "string" },
+          "metadata": { "type": "object" }
+        }
+      },
+      "description": "List of outputs produced"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional metadata"
+    }
+  },
+  "additionalProperties": false
+}
