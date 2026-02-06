@@ -28,8 +28,14 @@ jobs:
       - name: Verify (fast)
         run: pnpm run verify:fast
 
+      - name: Contracts check
+        run: pnpm run contracts:check
+
       - name: Contracts compatibility
         run: pnpm run contracts:compat
+
+      - name: Doctor
+        run: pnpm run doctor
 
       - name: Verify docs
         run: pnpm run docs:verify

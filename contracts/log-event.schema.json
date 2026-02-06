@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "growth-autopilot/log-event",
+  "title": "Structured Log Event",
+  "description": "Structured event envelope for growth-autopilot event logging",
+  "type": "object",
+  "required": ["event_id", "event_name", "occurred_at", "tenant_id", "project_id"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "minLength": 1,
+      "default": "2024-09-01",
+      "description": "Contract schema version"
+    },
+    "event_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique event identifier"
+    },
+    "event_name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Event name (e.g., page_view, signup_start)"
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of when the event occurred"
+    },
+    "tenant_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Tenant identifier"
+    },
+    "project_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Project identifier"
+    },
+    "trace_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Distributed trace identifier"
+    },
+    "source": {
+      "type": "string",
+      "description": "Event source system"
+    },
+    "payload": {
+      "type": "object",
+      "description": "Event payload data"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional metadata"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "growth-autopilot/evidence-packet",
+  "title": "Evidence Packet",
+  "description": "Evidence linking schema for tracing recommendations to source signals",
+  "type": "object",
+  "required": ["type", "path", "description"],
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": ["html_element", "json_path", "url", "event_count", "calculation", "assumption"],
+      "description": "Evidence source type"
+    },
+    "path": {
+      "type": "string",
+      "description": "Path to evidence source (DOM selector, JSON path, URL, etc.)"
+    },
+    "value": {
+      "oneOf": [
+        { "type": "string" },
+        { "type": "number" },
+        { "type": "boolean" }
+      ],
+      "description": "Evidence value"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable evidence description"
+    }
+  },
+  "additionalProperties": false
+}

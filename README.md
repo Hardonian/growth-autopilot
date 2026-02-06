@@ -320,6 +320,52 @@ growth analyze --help           # JobForge bundle + report
 
 Command table and examples are documented in `docs/cli.md`.
 
+## Contract Kit
+
+Canonical JSON Schema definitions live in `/contracts/`. These enforce cross-repo integration stability and prevent silent drift.
+
+### Running Contracts Check
+
+```bash
+# Validate contract schemas, SDK exports, CLI entrypoints, and fixtures
+pnpm run contracts:check
+```
+
+This validates:
+- All JSON Schema files in `/contracts/` are valid
+- `schema_version` alignment between JSON Schema and Zod runtime schemas
+- SDK public API surface (all expected schemas are exported)
+- CLI entrypoints exist and `--help` works for every command
+- Fixture files are valid JSON
+- `package.json` bin/main/types alignment
+
+### Running Doctor
+
+```bash
+# Verify environment, dependencies, and prerequisites
+pnpm run doctor
+```
+
+This checks:
+- Node.js version (>= 20.0.0)
+- pnpm version (>= 9.0.0)
+- Dependencies installed
+- Build output present
+- Contract Kit initialized
+- No secret leakage patterns in source files
+- Profile files present
+
+### Contract Schema Files
+
+| File | Purpose |
+|------|---------|
+| `contracts.version.json` | Contract version and schema version pin |
+| `config.schema.json` | Tenant context and runtime config |
+| `module-manifest.schema.json` | Run manifest for module outputs |
+| `evidence-packet.schema.json` | Evidence linking for recommendations |
+| `log-event.schema.json` | Structured event envelope |
+| `error-envelope.schema.json` | Typed error/degraded response |
+
 ## Development
 
 ```bash
@@ -337,6 +383,12 @@ pnpm run typecheck
 
 # Run tests
 pnpm run test
+
+# Validate contracts and SDK surface
+pnpm run contracts:check
+
+# Check environment health
+pnpm run doctor
 
 # Fast verification (lint + typecheck + build)
 pnpm run verify:fast
