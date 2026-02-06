@@ -3,7 +3,6 @@
 import { Command } from 'commander';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { ZodError } from 'zod';
 import { scanSite } from './seo/index.js';
 import { analyzeFunnel } from './funnel/index.js';
 import { proposeExperiments } from './experiments/index.js';
@@ -16,6 +15,14 @@ import {
 } from './jobforge/index.js';
 import { TenantContextSchema, serializeDeterministic } from './contracts/index.js';
 import { analyze, parseAnalyzeInputs, renderReport } from './jobforge/analyze.js';
+import { Logger } from './lib/logger.js';
+import { toErrorEnvelope } from './lib/error-envelope.js';
+import { ArtifactWriter, generateRunId } from './lib/artifacts.js';
+import {
+  EXIT_SUCCESS,
+  classifyError,
+  ValidationError,
+} from './lib/exit-codes.js';
 
 const program = new Command();
 
@@ -24,61 +31,244 @@ program
   .description('Runnerless growth autopilot for SEO audits, funnel analysis, and content drafting')
   .version('0.1.0');
 
-// Base options interface
+// ============================================================================
+// Shared types
+// ============================================================================
+
 interface BaseOptions {
   tenant?: string;
   project?: string;
+  json?: boolean;
+  config?: string;
+  dryRun?: boolean;
+  out?: string;
 }
 
-// Helper to validate tenant context
+// ============================================================================
+// Shared helpers
+// ============================================================================
+
+function createLogger(options: { json?: boolean }): Logger {
+  return new Logger({ json: options.json });
+}
+
 function validateTenantContext(options: BaseOptions): { tenant_id: string; project_id: string } {
   const tenantId = options.tenant ?? process.env.GROWTH_TENANT_ID;
   const projectId = options.project ?? process.env.GROWTH_PROJECT_ID;
 
   if (typeof tenantId !== 'string' || tenantId.length === 0 || typeof projectId !== 'string' || projectId.length === 0) {
-     
-    console.error('Error: tenant_id and project_id are required.');
-     
-    console.error('Provide via --tenant and --project flags or GROWTH_TENANT_ID and GROWTH_PROJECT_ID env vars.');
-    process.exit(1);
+    throw new ValidationError(
+      'tenant_id and project_id are required. Provide via --tenant/--project flags or GROWTH_TENANT_ID/GROWTH_PROJECT_ID env vars.'
+    );
   }
 
   const context = { tenant_id: tenantId, project_id: projectId };
   const result = TenantContextSchema.safeParse(context);
 
   if (!result.success) {
-     
-    console.error('Error: Invalid tenant context:', result.error.format());
-    process.exit(1);
+    throw new ValidationError(`Invalid tenant context: ${result.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ')}`);
   }
 
   return context;
 }
 
-function formatErrorMessage(error: unknown): string {
-  if (error instanceof ZodError) {
-    return `Validation error: ${error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`).join('; ')}`;
+/**
+ * Standard error handler for all commands.
+ * Wraps errors in ErrorEnvelope, logs structured output, exits with correct code.
+ */
+function handleError(error: unknown, log: Logger): never {
+  const envelope = toErrorEnvelope(error);
+  const exitCode = classifyError(error);
+
+  log.error(envelope.userMessage, {
+    code: envelope.code,
+    retryable: envelope.retryable,
+    ...(process.env.DEBUG ? { cause: envelope.cause } : {}),
+  });
+
+  if (log['jsonMode']) {
+    process.stderr.write(JSON.stringify(envelope) + '\n');
   }
 
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return 'Unknown error';
+  process.exit(exitCode);
 }
 
-function logError(error: unknown): void {
-  const message = formatErrorMessage(error);
-   
-  console.error('Error:', message);
+// ============================================================================
+// plan command — dry-run; no side effects
+// ============================================================================
 
-  if (process.env.DEBUG) {
-     
-    console.error(error);
-  }
+interface PlanOptions extends BaseOptions {
+  inputs?: string;
+  trace?: string;
+  smoke?: boolean;
+  stableOutput?: boolean;
 }
 
-// SEO Scan command
+program
+  .command('plan')
+  .description('Dry-run: generate plan + artifacts without network writes')
+  .option('--config <path>', 'Path to config file')
+  .option('--inputs <path>', 'Path to analysis input JSON')
+  .option('--tenant <id>', 'Tenant ID (or GROWTH_TENANT_ID env var)')
+  .option('--project <id>', 'Project ID (or GROWTH_PROJECT_ID env var)')
+  .option('--trace <id>', 'Trace ID for correlation')
+  .option('--out <dir>', 'Output directory', './artifacts')
+  .option('--json', 'Output structured JSON logs', false)
+  .option('--dry-run', 'Dry-run mode (always true for plan)', true)
+  .option('--smoke', 'Use built-in smoke test data', false)
+  .option('--stable-output', 'Remove nondeterministic fields', false)
+  .action(async (options: PlanOptions) => {
+    const log = createLogger(options);
+    const startedAt = new Date().toISOString();
+
+    try {
+      const tenantContext = options.smoke
+        ? { tenant_id: 'smoke-test', project_id: 'smoke' }
+        : validateTenantContext(options);
+      const traceId = options.trace ?? `plan-${Date.now()}`;
+
+      const runId = generateRunId(`plan-${tenantContext.tenant_id}-${tenantContext.project_id}-${traceId}`);
+      const artifacts = new ArtifactWriter(runId, options.out);
+      await artifacts.init();
+
+      log.info(`Plan started`, { runId, tenant: tenantContext.tenant_id, project: tenantContext.project_id });
+
+      let inputsContent: string;
+      if (options.smoke) {
+        // Use built-in fixture for smoke test
+        inputsContent = await fs.readFile(path.resolve('fixtures/jobforge/inputs.json'), 'utf-8');
+        log.info('Using built-in smoke test inputs');
+      } else if (options.inputs) {
+        inputsContent = await fs.readFile(options.inputs, 'utf-8');
+      } else {
+        throw new ValidationError('Either --inputs <path> or --smoke is required for plan');
+      }
+
+      const parsedInputs = parseAnalyzeInputs(inputsContent);
+
+      const result = await analyze(parsedInputs, {
+        tenant_id: tenantContext.tenant_id,
+        project_id: tenantContext.project_id,
+        trace_id: traceId,
+        stable_output: options.stableOutput ?? false,
+      });
+
+      // Write evidence artifacts
+      await artifacts.writeEvidence('request-bundle', result.jobRequestBundle);
+      await artifacts.writeEvidence('report', result.reportEnvelope);
+      await artifacts.writeEvidence('runner-maturity', result.runnerMaturityReport);
+
+      log.info('Plan complete', {
+        jobRequests: result.jobRequestBundle.requests.length,
+        findings: result.reportEnvelope.findings.length,
+      });
+
+      await artifacts.writeLogs(log.getEntries());
+      await artifacts.writeSummary('plan', {
+        inputs: options.inputs ?? 'smoke',
+        smoke: options.smoke ?? false,
+        dryRun: true,
+      }, startedAt, 'success');
+
+      log.info(`Artifacts written to ${artifacts.getDir()}`);
+      process.exit(EXIT_SUCCESS);
+    } catch (error) {
+      handleError(error, log);
+    }
+  });
+
+// ============================================================================
+// run command — execute pipeline with optional --smoke
+// ============================================================================
+
+interface RunOptions extends BaseOptions {
+  inputs?: string;
+  trace?: string;
+  smoke?: boolean;
+  stableOutput?: boolean;
+}
+
+program
+  .command('run')
+  .description('Execute the growth pipeline and emit artifacts')
+  .option('--config <path>', 'Path to config file')
+  .option('--inputs <path>', 'Path to analysis input JSON')
+  .option('--tenant <id>', 'Tenant ID (or GROWTH_TENANT_ID env var)')
+  .option('--project <id>', 'Project ID (or GROWTH_PROJECT_ID env var)')
+  .option('--trace <id>', 'Trace ID for correlation')
+  .option('--out <dir>', 'Output directory', './artifacts')
+  .option('--json', 'Output structured JSON logs', false)
+  .option('--dry-run', 'Skip external writes', false)
+  .option('--smoke', 'Run smoke test with built-in data', false)
+  .option('--stable-output', 'Remove nondeterministic fields', false)
+  .action(async (options: RunOptions) => {
+    const log = createLogger(options);
+    const startedAt = new Date().toISOString();
+
+    try {
+      const tenantContext = options.smoke
+        ? { tenant_id: 'smoke-test', project_id: 'smoke' }
+        : validateTenantContext(options);
+      const traceId = options.trace ?? `run-${Date.now()}`;
+
+      const runId = generateRunId(`run-${tenantContext.tenant_id}-${tenantContext.project_id}-${traceId}`);
+      const artifacts = new ArtifactWriter(runId, options.out);
+      await artifacts.init();
+
+      log.info('Run started', { runId, tenant: tenantContext.tenant_id, project: tenantContext.project_id, smoke: options.smoke ?? false });
+
+      let inputsContent: string;
+      if (options.smoke) {
+        inputsContent = await fs.readFile(path.resolve('fixtures/jobforge/inputs.json'), 'utf-8');
+        log.info('Using built-in smoke test inputs');
+      } else if (options.inputs) {
+        inputsContent = await fs.readFile(options.inputs, 'utf-8');
+      } else {
+        throw new ValidationError('Either --inputs <path> or --smoke is required for run');
+      }
+
+      const parsedInputs = parseAnalyzeInputs(inputsContent);
+
+      const result = await analyze(parsedInputs, {
+        tenant_id: tenantContext.tenant_id,
+        project_id: tenantContext.project_id,
+        trace_id: traceId,
+        stable_output: options.stableOutput ?? false,
+      });
+
+      // Write evidence artifacts
+      await artifacts.writeEvidence('request-bundle', result.jobRequestBundle);
+      await artifacts.writeEvidence('report', result.reportEnvelope);
+      await artifacts.writeEvidence('runner-maturity', result.runnerMaturityReport);
+
+      // Write human-readable report
+      const reportMd = renderReport(result.reportEnvelope, 'md');
+      await artifacts.writeEvidence('report-md', reportMd);
+
+      log.info('Run complete', {
+        jobRequests: result.jobRequestBundle.requests.length,
+        findings: result.reportEnvelope.findings.length,
+        dryRun: options.dryRun ?? false,
+      });
+
+      await artifacts.writeLogs(log.getEntries());
+      await artifacts.writeSummary('run', {
+        inputs: options.inputs ?? 'smoke',
+        smoke: options.smoke ?? false,
+        dryRun: options.dryRun ?? false,
+      }, startedAt, 'success');
+
+      log.info(`Artifacts written to ${artifacts.getDir()}`);
+      process.exit(EXIT_SUCCESS);
+    } catch (error) {
+      handleError(error, log);
+    }
+  });
+
+// ============================================================================
+// seo-scan command
+// ============================================================================
+
 interface SEOScanOptions extends BaseOptions {
   path: string;
   type: 'html_export' | 'nextjs_routes';
@@ -94,13 +284,15 @@ program
   .option('--tenant <id>', 'Tenant ID (or GROWTH_TENANT_ID env var)')
   .option('--project <id>', 'Project ID (or GROWTH_PROJECT_ID env var)')
   .option('--output <path>', 'Output file path', './seo-audit.json')
+  .option('--json', 'Output structured JSON logs', false)
+  .option('--dry-run', 'Dry-run mode', false)
   .option('--jobforge', 'Also generate JobForge job request', false)
   .action(async (options: SEOScanOptions) => {
+    const log = createLogger(options);
     try {
       const tenantContext = validateTenantContext(options);
 
-       
-      console.log(`Scanning ${options.type} at ${options.path}...`);
+      log.info(`Scanning ${options.type} at ${options.path}...`);
 
       const audit = await scanSite({
         tenantContext,
@@ -108,24 +300,10 @@ program
         sourcePath: options.path,
       });
 
-      // Write audit result
       await fs.writeFile(options.output, JSON.stringify(audit, null, 2));
-       
-      console.log(`SEO audit written to ${options.output}`);
-       
-      console.log(`\nSummary:`);
-       
-      console.log(`  URLs scanned: ${audit.urls_scanned}`);
-       
-      console.log(`  Critical: ${audit.summary.critical}`);
-       
-      console.log(`  Warnings: ${audit.summary.warning}`);
-       
-      console.log(`  Info: ${audit.summary.info}`);
-       
-      console.log(`  Opportunities: ${audit.summary.opportunity}`);
+      log.info(`SEO audit written to ${options.output}`);
+      log.info(`Summary: ${audit.urls_scanned} URLs, ${audit.summary.critical} critical, ${audit.summary.warning} warnings, ${audit.summary.info} info, ${audit.summary.opportunity} opportunities`);
 
-      // Generate job request if requested
       if (options.jobforge) {
         const job = createSEOScanJob(tenantContext, options.path, options.type, 'medium', {
           relatedAuditId: audit.id,
@@ -133,16 +311,19 @@ program
         });
         const jobPath = options.output.replace('.json', '-job.json');
         await fs.writeFile(jobPath, serializeJobRequest(job));
-         
-        console.log(`\nJobForge request written to ${jobPath}`);
+        log.info(`JobForge request written to ${jobPath}`);
       }
+
+      process.exit(EXIT_SUCCESS);
     } catch (error) {
-      logError(error);
-      process.exit(1);
+      handleError(error, log);
     }
   });
 
-// Funnel analysis command
+// ============================================================================
+// funnel command
+// ============================================================================
+
 interface FunnelOptions extends BaseOptions {
   events: string;
   steps: string;
@@ -159,15 +340,16 @@ program
   .option('--tenant <id>', 'Tenant ID (or GROWTH_TENANT_ID env var)')
   .option('--project <id>', 'Project ID (or GROWTH_PROJECT_ID env var)')
   .option('--output <path>', 'Output file path', './funnel-metrics.json')
+  .option('--json', 'Output structured JSON logs', false)
+  .option('--dry-run', 'Dry-run mode', false)
   .action(async (options: FunnelOptions) => {
+    const log = createLogger(options);
     try {
       const tenantContext = validateTenantContext(options);
       const steps = options.steps.split(',').map((s: string) => s.trim());
 
-       
-      console.log(`Analyzing funnel: ${options.name}`);
-       
-      console.log(`Steps: ${steps.join(' → ')}`);
+      log.info(`Analyzing funnel: ${options.name}`);
+      log.info(`Steps: ${steps.join(' → ')}`);
 
       const metrics = await analyzeFunnel({
         tenantContext,
@@ -177,36 +359,28 @@ program
       });
 
       await fs.writeFile(options.output, JSON.stringify(metrics, null, 2));
-       
-      console.log(`\nFunnel metrics written to ${options.output}`);
-       
-      console.log(`\nResults:`);
-       
-      console.log(`  Total entrances: ${metrics.total_entrances}`);
-       
-      console.log(`  Total conversions: ${metrics.total_conversions}`);
-       
-      console.log(`  Overall conversion: ${(metrics.overall_conversion_rate * 100).toFixed(1)}%`);
+      log.info(`Funnel metrics written to ${options.output}`);
+      log.info(`Results: ${metrics.total_entrances} entrances, ${metrics.total_conversions} conversions, ${(metrics.overall_conversion_rate * 100).toFixed(1)}% conversion`);
 
       if (metrics.biggest_drop_off_step) {
         const dropOffStep = metrics.steps.find((s) => s.step_name === metrics.biggest_drop_off_step);
-         
-        console.log(`  Biggest drop-off: ${metrics.biggest_drop_off_step} (${(dropOffStep?.drop_off_rate ?? 0) * 100}%)`);
+        log.info(`Biggest drop-off: ${metrics.biggest_drop_off_step} (${(dropOffStep?.drop_off_rate ?? 0) * 100}%)`);
       }
 
-       
-      console.log(`\nStep breakdown:`);
       for (const step of metrics.steps) {
-         
-        console.log(`  ${step.step_name}: ${step.unique_users} users (${Math.round(step.drop_off_rate * 100)}% drop-off)`);
+        log.info(`  ${step.step_name}: ${step.unique_users} users (${Math.round(step.drop_off_rate * 100)}% drop-off)`);
       }
+
+      process.exit(EXIT_SUCCESS);
     } catch (error) {
-      logError(error);
-      process.exit(1);
+      handleError(error, log);
     }
   });
 
-// Propose experiments command
+// ============================================================================
+// propose-experiments command
+// ============================================================================
+
 interface ProposeOptions extends BaseOptions {
   funnel: string;
   max: string;
@@ -222,17 +396,18 @@ program
   .option('--tenant <id>', 'Tenant ID (or GROWTH_TENANT_ID env var)')
   .option('--project <id>', 'Project ID (or GROWTH_PROJECT_ID env var)')
   .option('--output <path>', 'Output file path', './experiment-proposals.json')
+  .option('--json', 'Output structured JSON logs', false)
+  .option('--dry-run', 'Dry-run mode', false)
   .option('--jobforge', 'Also generate JobForge job request', false)
   .action(async (options: ProposeOptions) => {
+    const log = createLogger(options);
     try {
       const tenantContext = validateTenantContext(options);
 
-      // Load funnel metrics
       const funnelData = await fs.readFile(options.funnel, 'utf-8');
       const funnelMetrics = JSON.parse(funnelData) as unknown;
 
-       
-      console.log(`Generating experiment proposals from ${options.funnel}...`);
+      log.info(`Generating experiment proposals from ${options.funnel}...`);
 
       const proposals = proposeExperiments({
         tenantContext,
@@ -241,40 +416,32 @@ program
       });
 
       await fs.writeFile(options.output, JSON.stringify(proposals, null, 2));
-       
-      console.log(`\n${proposals.length} experiment proposal(s) written to ${options.output}`);
+      log.info(`${proposals.length} experiment proposal(s) written to ${options.output}`);
 
       for (let i = 0; i < proposals.length; i++) {
         const p = proposals[i];
-         
-        console.log(`\n${i + 1}. ${p.title}`);
-         
-        console.log(`   Hypothesis: ${p.hypothesis}`);
-         
-        console.log(`   Effort: ${p.effort.level} (~${p.effort.days_estimate} days)`);
-         
-        console.log(`   Expected impact: +${p.expected_impact.lift_percent}% (${p.expected_impact.confidence} confidence)`);
-         
-        console.log(`   Variants: ${p.suggested_variants.length}`);
+        log.info(`${i + 1}. ${p.title} — ${p.hypothesis} (effort: ${p.effort.level}, impact: +${p.expected_impact.lift_percent}%)`);
       }
 
-      // Generate job request if requested
       if (options.jobforge && proposals.length > 0) {
         const job = createExperimentProposalJob(tenantContext, funnelMetrics as Parameters<typeof proposeExperiments>[0]['funnelMetrics'], 'medium', {
           notes: `${proposals.length} experiment proposals generated`,
         });
         const jobPath = options.output.replace('.json', '-job.json');
         await fs.writeFile(jobPath, serializeJobRequest(job));
-         
-        console.log(`\nJobForge request written to ${jobPath}`);
+        log.info(`JobForge request written to ${jobPath}`);
       }
+
+      process.exit(EXIT_SUCCESS);
     } catch (error) {
-      logError(error);
-      process.exit(1);
+      handleError(error, log);
     }
   });
 
-// Draft content command
+// ============================================================================
+// draft-content command
+// ============================================================================
+
 interface DraftContentOptions extends BaseOptions {
   profile: string;
   type: string;
@@ -302,16 +469,18 @@ program
   .option('--tenant <id>', 'Tenant ID (or GROWTH_TENANT_ID env var)')
   .option('--project <id>', 'Project ID (or GROWTH_PROJECT_ID env var)')
   .option('--output <path>', 'Output file path', './content-draft.json')
+  .option('--json', 'Output structured JSON logs', false)
+  .option('--dry-run', 'Dry-run mode', false)
   .option('--jobforge', 'Also generate JobForge job request', false)
   .action(async (options: DraftContentOptions) => {
+    const log = createLogger(options);
     try {
       const tenantContext = validateTenantContext(options);
 
       const keywords = options.keywords?.split(',').map((s: string) => s.trim()) ?? [];
       const features = options.features?.split(',').map((s: string) => s.trim()) ?? [];
 
-       
-      console.log(`Drafting ${options.type} using profile: ${options.profile}`);
+      log.info(`Drafting ${options.type} using profile: ${options.profile}`);
 
       const draft = await draftContent({
         tenantContext,
@@ -326,26 +495,19 @@ program
       });
 
       await fs.writeFile(options.output, JSON.stringify(draft, null, 2));
-       
-      console.log(`\nContent draft written to ${options.output}`);
-       
-      console.log(`\nDraft preview:`);
+      log.info(`Content draft written to ${options.output}`);
+
       if (draft.draft.headline) {
-         
-        console.log(`  Headline: ${draft.draft.headline}`);
+        log.info(`Headline: ${draft.draft.headline}`);
       }
       if (draft.draft.subject_line) {
-         
-        console.log(`  Subject: ${draft.draft.subject_line}`);
+        log.info(`Subject: ${draft.draft.subject_line}`);
       }
-       
-      console.log(`  Body length: ${draft.draft.body.length} characters`);
+      log.info(`Body length: ${draft.draft.body.length} characters`);
       if (draft.draft.cta) {
-         
-        console.log(`  CTA: ${draft.draft.cta}`);
+        log.info(`CTA: ${draft.draft.cta}`);
       }
 
-      // Generate job request if requested
       if (options.jobforge) {
         const job = createContentDraftJob(
           tenantContext,
@@ -364,19 +526,22 @@ program
         );
         const jobPath = options.output.replace('.json', '-job.json');
         await fs.writeFile(jobPath, serializeJobRequest(job));
-         
-        console.log(`\nJobForge request written to ${jobPath}`);
+        log.info(`JobForge request written to ${jobPath}`);
       }
+
+      process.exit(EXIT_SUCCESS);
     } catch (error) {
-      logError(error);
-      process.exit(1);
+      handleError(error, log);
     }
   });
+
+// ============================================================================
+// analyze command (preserved for backwards compat)
+// ============================================================================
 
 interface AnalyzeOptions extends BaseOptions {
   inputs: string;
   trace: string;
-  out: string;
   stableOutput: boolean;
   renderMd: boolean;
 }
@@ -389,9 +554,12 @@ program
   .requiredOption('--project <id>', 'Project ID (or GROWTH_PROJECT_ID env var)')
   .requiredOption('--trace <id>', 'Trace ID for JobForge correlation')
   .option('--out <dir>', 'Output directory', './jobforge-output')
+  .option('--json', 'Output structured JSON logs', false)
+  .option('--dry-run', 'Dry-run mode', false)
   .option('--stable-output', 'Remove nondeterministic fields for fixtures/docs', false)
   .option('--no-render-md', 'Skip Markdown report rendering')
   .action(async (options: AnalyzeOptions) => {
+    const log = createLogger(options);
     try {
       const tenantContext = validateTenantContext(options);
       const inputsContent = await fs.readFile(options.inputs, 'utf-8');
@@ -404,12 +572,13 @@ program
         stable_output: options.stableOutput,
       });
 
-      await fs.mkdir(options.out, { recursive: true });
+      const outDir = options.out ?? './jobforge-output';
+      await fs.mkdir(outDir, { recursive: true });
 
-      const requestBundlePath = path.join(options.out, 'request-bundle.json');
-      const reportPath = path.join(options.out, 'report.json');
-      const reportMdPath = path.join(options.out, 'report.md');
-      const runnerMaturityPath = path.join(options.out, 'runner-maturity.json');
+      const requestBundlePath = path.join(outDir, 'request-bundle.json');
+      const reportPath = path.join(outDir, 'report.json');
+      const reportMdPath = path.join(outDir, 'report.md');
+      const runnerMaturityPath = path.join(outDir, 'runner-maturity.json');
 
       await fs.writeFile(requestBundlePath, serializeDeterministic(result.jobRequestBundle));
       await fs.writeFile(reportPath, serializeDeterministic(result.reportEnvelope));
@@ -419,47 +588,112 @@ program
         await fs.writeFile(reportMdPath, renderReport(result.reportEnvelope, 'md'));
       }
 
-       
-      console.log(`JobForge request bundle written to ${requestBundlePath}`);
-       
-      console.log(`Report written to ${reportPath}`);
-       
-      console.log(`Runner maturity report written to ${runnerMaturityPath}`);
+      log.info(`JobForge request bundle written to ${requestBundlePath}`);
+      log.info(`Report written to ${reportPath}`);
+      log.info(`Runner maturity report written to ${runnerMaturityPath}`);
       if (options.renderMd) {
-         
-        console.log(`Markdown report written to ${reportMdPath}`);
+        log.info(`Markdown report written to ${reportMdPath}`);
       }
+
+      process.exit(EXIT_SUCCESS);
     } catch (error) {
-      logError(error);
-      process.exit(error instanceof ZodError ? 2 : 1);
+      handleError(error, log);
     }
   });
 
-// Show help examples
+// ============================================================================
+// replay command — reuse artifacts for diagnosis
+// ============================================================================
+
+interface ReplayOptions extends BaseOptions {
+  runDir: string;
+}
+
+program
+  .command('replay')
+  .description('Replay a previous run from its artifacts for diagnosis')
+  .requiredOption('--run-dir <path>', 'Path to a previous run artifact directory')
+  .option('--json', 'Output structured JSON logs', false)
+  .action(async (options: ReplayOptions) => {
+    const log = createLogger(options);
+    try {
+      const summaryPath = path.join(options.runDir, 'summary.json');
+      const logsPath = path.join(options.runDir, 'logs.jsonl');
+
+      const summaryRaw = await fs.readFile(summaryPath, 'utf-8');
+      const summary = JSON.parse(summaryRaw) as Record<string, unknown>;
+
+      log.info('Replaying run', { runId: summary['runId'], command: summary['command'] });
+      log.info(`Status: ${String(summary['status'])}`);
+      log.info(`Started: ${String(summary['startedAt'])}`);
+      log.info(`Completed: ${String(summary['completedAt'])}`);
+
+      const outputs = summary['outputs'];
+      if (Array.isArray(outputs)) {
+        log.info(`Outputs: ${outputs.length} files`);
+        for (const o of outputs) {
+          log.info(`  ${String(o)}`);
+        }
+      }
+
+      const errors = summary['errors'];
+      if (Array.isArray(errors) && errors.length > 0) {
+        log.warn(`Errors: ${errors.length}`);
+        for (const e of errors as Array<{ code: string; message: string }>) {
+          log.warn(`  [${e.code}] ${e.message}`);
+        }
+      }
+
+      // Replay logs
+      try {
+        const logsRaw = await fs.readFile(logsPath, 'utf-8');
+        const logLines = logsRaw.trim().split('\n');
+        log.info(`\nReplaying ${logLines.length} log entries:`);
+        for (const line of logLines) {
+          process.stdout.write(line + '\n');
+        }
+      } catch {
+        log.warn('No logs.jsonl found in run directory');
+      }
+
+      process.exit(EXIT_SUCCESS);
+    } catch (error) {
+      handleError(error, log);
+    }
+  });
+
+// ============================================================================
+// Help examples
+// ============================================================================
+
 program.on('--help', () => {
-   
   console.log('');
-   
   console.log('Examples:');
-   
+  console.log('  $ growth plan --smoke                                          # Smoke-test plan');
+  console.log('  $ growth run --smoke                                           # Smoke-test run');
+  console.log('  $ growth plan --inputs ./data.json --tenant acme --project web # Plan with real data');
+  console.log('  $ growth run --inputs ./data.json --tenant acme --project web  # Full run');
+  console.log('  $ growth replay --run-dir ./artifacts/<runId>                  # Replay a run');
   console.log('  $ growth seo-scan --path ./site-export --tenant acme --project website');
-   
-  console.log('  $ growth funnel --events ./events.json --steps "page_view,signup_start,signup_complete,first_action"');
-   
-  console.log('  $ growth propose-experiments --funnel ./funnel-metrics.json --tenant acme --project app');
-   
-  console.log('  $ growth draft-content --profile readylayer --type onboarding_email --goal "Welcome new users"');
-   
-  console.log('  $ growth analyze --inputs ./fixtures/jobforge/inputs.json --tenant acme --project app --trace trace-123 --out ./out');
-   
+  console.log('  $ growth funnel --events ./events.json --steps "page_view,signup_start,signup_complete"');
+  console.log('  $ growth analyze --inputs ./fixtures/jobforge/inputs.json --tenant acme --project app --trace trace-123');
   console.log('');
-   
+  console.log('Unified flags (all commands):');
+  console.log('  --config <path>   Path to config file');
+  console.log('  --dry-run         Skip external writes');
+  console.log('  --out <dir>       Output directory');
+  console.log('  --json            Structured JSON log output');
+  console.log('  --smoke           Use built-in smoke test data');
+  console.log('');
+  console.log('Exit codes:');
+  console.log('  0  Success');
+  console.log('  2  Validation error');
+  console.log('  3  External dependency failure');
+  console.log('  4  Unexpected bug');
+  console.log('');
   console.log('Environment variables:');
-   
   console.log('  GROWTH_TENANT_ID      Default tenant ID');
-   
   console.log('  GROWTH_PROJECT_ID     Default project ID');
-   
   console.log('  GROWTH_PROFILES_DIR   Path to profiles directory (default: ./profiles)');
 });
 
