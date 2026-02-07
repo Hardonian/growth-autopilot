@@ -223,6 +223,103 @@ Job requests:
 
 Submit to JobForge when ready to execute.
 
+## ControlPlane Integration
+
+Growth Autopilot implements the ControlPlane runner contract for orchestrated execution:
+
+### Runner Contract
+
+```typescript
+interface RunnerContract {
+  id: 'growth-autopilot';
+  version: '0.1.0';
+  capabilities: ['seo_analysis', 'funnel_analysis', 'experiment_proposal', 'content_drafting', 'jobforge_integration'];
+  blastRadius: 'low';
+  execute(input: RunnerInput): Promise<RunnerResult>;
+}
+```
+
+### ControlPlane Execution
+
+ControlPlane can call the runner directly:
+
+```typescript
+import { runnerContract } from 'growth-autopilot';
+
+const result = await runnerContract.execute({
+  tenant_id: 'my-tenant',
+  project_id: 'my-project',
+  trace_id: 'trace-123',
+  inputs: {
+    seo_scan: { source_path: './site', source_type: 'html_export' },
+    funnel_analysis: { events_path: './events.json', steps: ['view', 'signup'] },
+    // ... other inputs
+  },
+});
+
+// Result includes:
+// - status: 'success' | 'degraded' | 'error'
+// - output: { report, bundle, maturity_report, evidence_packet }
+// - evidence: Array of execution evidence with timestamps
+// - error?: Error details if failed
+```
+
+### Evidence Packet
+
+Every execution emits a comprehensive evidence packet:
+
+```json
+{
+  "schema_version": "2024-09-01",
+  "packet_id": "uuid",
+  "runner_id": "growth-autopilot",
+  "runner_version": "0.1.0",
+  "tenant_id": "my-tenant",
+  "project_id": "my-project",
+  "trace_id": "trace-123",
+  "created_at": "2024-01-01T00:00:00Z",
+  "inputs": { /* execution inputs */ },
+  "decisions": { /* execution decisions */ },
+  "outputs": { /* execution outputs */ },
+  "evidence_links": [ /* evidence array */ ],
+  "canonical_hash": "sha256-hash",
+  "canonical_hash_algorithm": "sha256",
+  "canonicalization": "sorted_keys"
+}
+```
+
+### Demo Run
+
+Test the runner integration without external dependencies:
+
+```bash
+# Run deterministic demo
+growth demo
+
+# Output:
+# Demo completed successfully!
+# - Tenant: demo-tenant
+# - Project: demo-project
+# - Job Requests: 4
+# - Findings: 3
+# - Recommendations: 4
+#
+# Capabilities demonstrated:
+# - seo_analysis
+# - funnel_analysis
+# - experiment_proposal
+# - content_drafting
+```
+
+### Safe Execution
+
+The runner contract ensures safe execution:
+
+- **Never crashes** - All errors return structured `{status: 'error', error: {...}}`
+- **Evidence-traced** - Every decision and output is evidence-linked
+- **Deterministic** - Same inputs produce identical outputs (stable_output=true)
+- **Low blast radius** - Only analyzes data, never executes actions
+
 ### JobForge Analyze (Bundle + Report)
 
 Use the dedicated `analyze` command to generate a JobForge request bundle and report envelope:
