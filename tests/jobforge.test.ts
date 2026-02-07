@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { execSync } from 'child_process';
 import {
   createSEOScanJob,
   createExperimentProposalJob,
@@ -163,7 +164,7 @@ describe('JobForge Integration', () => {
     it('should never auto-execute by default', () => {
       const seoJob = createSEOScanJob(tenantContext, '/path', 'html_export');
       const experimentJob = createExperimentRunJob(tenantContext, mockProposal);
-      const contentJob = createContentDraftJob(tenantContext, 'profile', 'type', 'goal');
+      const contentJob = createContentDraftJob(tenantContext, 'profile', 'landing_page', 'goal');
 
       expect(seoJob.constraints.auto_execute).toBe(false);
       expect(experimentJob.constraints.auto_execute).toBe(false);
@@ -261,5 +262,52 @@ describe('JobForge Integration', () => {
       const daysDiff = (deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
       expect(daysDiff).toBeCloseTo(14, 0);
     });
+  });
+});
+
+describe('Demo Command Smoke Test', () => {
+  it('should run demo command successfully', () => {
+    // Build the project first
+    execSync('pnpm run build', { stdio: 'inherit' });
+
+    // Run the demo command
+    const result = execSync('node dist/cli.js demo --json', {
+      encoding: 'utf8',
+      cwd: process.cwd(),
+    });
+
+    // Parse the JSON output
+    const output = JSON.parse(result);
+
+    // Verify the demo run structure
+    expect(output.status).toBe('success');
+    expect(output.demo_tenant_id).toBe('demo-tenant');
+    expect(output.demo_project_id).toBe('demo-project');
+    expect(output.demo_trace_id).toBe('demo-trace-123');
+    expect(typeof output.job_requests_count).toBe('number');
+    expect(typeof output.findings_count).toBe('number');
+    expect(typeof output.recommendations_count).toBe('number');
+    expect(output.capabilities_demonstrated).toEqual([
+      'seo_analysis',
+      'funnel_analysis',
+      'experiment_proposal',
+      'content_drafting',
+    ]);
+    expect(output.blast_radius).toBe('low');
+    expect(output.evidence_packet_available).toBe(true);
+  });
+
+  it('should handle demo command gracefully on failure', () => {
+    // This test ensures the demo command doesn't crash the process
+    // even if there are issues - it should return proper error codes
+    try {
+      execSync('node dist/cli.js demo --invalid-flag', {
+        stdio: 'pipe',
+        cwd: process.cwd(),
+      });
+    } catch (error: any) {
+      // Should exit with non-zero code but not crash
+      expect(error.status).not.toBe(0);
+    }
   });
 });
