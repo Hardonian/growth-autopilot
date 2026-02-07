@@ -6,7 +6,7 @@ import {
   stableHash,
   serializeDeterministic,
 } from '../contracts/index.js';
-import { toErrorEnvelope } from '../lib/error-envelope.js';
+import { toErrorEnvelope } from '../lib/index.js';
 
 /**
  * Runner Contract for ControlPlane integration
