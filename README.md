@@ -409,11 +409,16 @@ Environment variables:
 growth --help                    # Show help
 growth --version                 # Show version
 
+# Core commands
 growth seo-scan --help          # SEO scan help
 growth funnel --help            # Funnel analysis help
 growth propose-experiments --help # Experiments help
 growth draft-content --help     # Content drafting help
 growth analyze --help           # JobForge bundle + report
+
+# ControlPlane integration
+growth demo                      # Deterministic demo run
+growth demo --json               # Demo with JSON output
 ```
 
 Command table and examples are documented in `docs/cli.md`.
