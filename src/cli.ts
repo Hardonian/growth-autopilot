@@ -14,7 +14,7 @@ import {
   serializeJobRequest,
 } from './jobforge/index.js';
 import { TenantContextSchema, serializeDeterministic } from './contracts/index.js';
-import { analyze, parseAnalyzeInputs, renderReport } from './jobforge/analyze.js';
+import { analyze, parseAnalyzeInputs, renderReport, type AnalyzeInputs } from './jobforge/analyze.js';
 import { Logger } from './lib/logger.js';
 import { toErrorEnvelope } from './lib/error-envelope.js';
 import { ArtifactWriter, generateRunId } from './lib/artifacts.js';
@@ -593,6 +593,100 @@ program
       log.info(`Runner maturity report written to ${runnerMaturityPath}`);
       if (options.renderMd) {
         log.info(`Markdown report written to ${reportMdPath}`);
+      }
+
+      process.exit(EXIT_SUCCESS);
+    } catch (error) {
+      handleError(error, log);
+    }
+  });
+
+// ============================================================================
+// demo command — deterministic demo run for ControlPlane integration
+// ============================================================================
+
+program
+  .command('demo')
+  .description('Run a deterministic demo of the growth autopilot runner')
+  .option('--json', 'Output structured JSON logs', false)
+  .action(async (options: { json?: boolean }) => {
+    const log = createLogger(options);
+    try {
+      // Use fixed demo context (no external secrets required)
+      const demoTenantId = 'demo-tenant';
+      const demoProjectId = 'demo-project';
+      const demoTraceId = 'demo-trace-123';
+
+      log.info('Starting growth autopilot demo run...');
+
+      // Create deterministic demo inputs
+      const demoInputs: AnalyzeInputs = {
+        seo_scan: {
+          source_path: './fixtures/jobforge',
+          source_type: 'html_export',
+        },
+        funnel_analysis: {
+          events_path: './fixtures/jobforge/inputs.json',
+          steps: ['page_view', 'signup_start', 'signup_complete'],
+          funnel_name: 'demo-onboarding-funnel',
+        },
+        experiment_proposals: {
+          max_proposals: 2,
+        },
+        content_draft: {
+          profile: 'jobforge',
+          content_type: 'onboarding_email',
+          goal: 'Welcome new users to the platform',
+          keywords: ['automation', 'workflows'],
+          features: ['Visual designer', 'JobForge integration'],
+          audience: 'Development teams',
+        },
+      };
+
+      log.info('Running analysis with demo inputs...');
+
+      const result = await analyze(demoInputs, {
+        tenant_id: demoTenantId,
+        project_id: demoProjectId,
+        trace_id: demoTraceId,
+        stable_output: true,
+      });
+
+      log.info('Demo analysis completed successfully');
+      log.info(`Generated ${result.jobRequestBundle.requests.length} job requests`);
+      log.info(`Found ${result.reportEnvelope.findings.length} findings`);
+      log.info(`Created ${result.reportEnvelope.recommendations.length} recommendations`);
+
+      // Output summary in JSON for ControlPlane consumption
+      const summary = {
+        status: 'success',
+        demo_tenant_id: demoTenantId,
+        demo_project_id: demoProjectId,
+        demo_trace_id: demoTraceId,
+        job_requests_count: result.jobRequestBundle.requests.length,
+        findings_count: result.reportEnvelope.findings.length,
+        recommendations_count: result.reportEnvelope.recommendations.length,
+        capabilities_demonstrated: [
+          'seo_analysis',
+          'funnel_analysis',
+          'experiment_proposal',
+          'content_drafting',
+        ],
+        blast_radius: 'low',
+        evidence_packet_available: true,
+      };
+
+      if (options.json) {
+        console.log(JSON.stringify(summary, null, 2));
+      } else {
+        console.log('Demo completed successfully!');
+        console.log(`- Tenant: ${demoTenantId}`);
+        console.log(`- Project: ${demoProjectId}`);
+        console.log(`- Job Requests: ${result.jobRequestBundle.requests.length}`);
+        console.log(`- Findings: ${result.reportEnvelope.findings.length}`);
+        console.log(`- Recommendations: ${result.reportEnvelope.recommendations.length}`);
+        console.log('\nCapabilities demonstrated:');
+        summary.capabilities_demonstrated.forEach(cap => console.log(`- ${cap}`));
       }
 
       process.exit(EXIT_SUCCESS);
