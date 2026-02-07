@@ -8,11 +8,12 @@ A runnerless growth autopilot that scans site structure (routes or exported HTML
 
 This tool follows a strict "runnerless" philosophy:
 
-1. **No auto-publishing** - Content is drafted, not deployed
+1. **No auto-publish** - Content is drafted, not deployed
 2. **No scheduler/connector secrets** - No infrastructure to manage
 3. **Multi-tenant by design** - All operations require tenant_id + project_id
 4. **Evidence-linked** - Every recommendation traces back to source signals
 5. **LLM optional** - SEO scanner and experiment proposer work without LLM
+6. **ControlPlane callable** - Implements runner contract for orchestrated execution
 
 ## Quick Start
 
