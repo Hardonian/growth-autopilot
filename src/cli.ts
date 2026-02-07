@@ -617,7 +617,9 @@ program
       const demoProjectId = 'demo-project';
       const demoTraceId = 'demo-trace-123';
 
-      log.info('Starting growth autopilot demo run...');
+      if (!options.json) {
+        log.info('Starting growth autopilot demo run...');
+      }
 
       // Create deterministic demo inputs
       const demoInputs: AnalyzeInputs = {
@@ -631,7 +633,9 @@ program
         },
       };
 
-      log.info('Running analysis with demo inputs...');
+      if (!options.json) {
+        log.info('Running analysis with demo inputs...');
+      }
 
       const result = await analyze(demoInputs, {
         tenant_id: demoTenantId,
@@ -640,10 +644,12 @@ program
         stable_output: true,
       });
 
-      log.info('Demo analysis completed successfully');
-      log.info(`Generated ${result.jobRequestBundle.requests.length} job requests`);
-      log.info(`Found ${result.reportEnvelope.findings.length} findings`);
-      log.info(`Created ${result.reportEnvelope.recommendations.length} recommendations`);
+      if (!options.json) {
+        log.info('Demo analysis completed successfully');
+        log.info(`Generated ${result.jobRequestBundle.requests.length} job requests`);
+        log.info(`Found ${result.reportEnvelope.findings.length} findings`);
+        log.info(`Created ${result.reportEnvelope.recommendations.length} recommendations`);
+      }
 
       // Output summary in JSON for ControlPlane consumption
       const summary = {
