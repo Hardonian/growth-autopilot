@@ -621,18 +621,6 @@ program
 
       // Create deterministic demo inputs
       const demoInputs: AnalyzeInputs = {
-        seo_scan: {
-          source_path: './fixtures/jobforge',
-          source_type: 'html_export',
-        },
-        funnel_analysis: {
-          events_path: './fixtures/jobforge/inputs.json',
-          steps: ['page_view', 'signup_start', 'signup_complete'],
-          funnel_name: 'demo-onboarding-funnel',
-        },
-        experiment_proposals: {
-          max_proposals: 2,
-        },
         content_draft: {
           profile: 'jobforge',
           content_type: 'onboarding_email',
@@ -667,9 +655,6 @@ program
         findings_count: result.reportEnvelope.findings.length,
         recommendations_count: result.reportEnvelope.recommendations.length,
         capabilities_demonstrated: [
-          'seo_analysis',
-          'funnel_analysis',
-          'experiment_proposal',
           'content_drafting',
         ],
         blast_radius: 'low',
