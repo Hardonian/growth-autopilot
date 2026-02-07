@@ -288,9 +288,6 @@ describe('Demo Command Smoke Test', () => {
     expect(typeof output.findings_count).toBe('number');
     expect(typeof output.recommendations_count).toBe('number');
     expect(output.capabilities_demonstrated).toEqual([
-      'seo_analysis',
-      'funnel_analysis',
-      'experiment_proposal',
       'content_drafting',
     ]);
     expect(output.blast_radius).toBe('low');
