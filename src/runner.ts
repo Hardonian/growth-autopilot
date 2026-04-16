@@ -1,12 +1,12 @@
 import { z } from 'zod';
-import { analyze, type AnalyzeInputs } from './jobforge/analyze.js';
+import { analyze, parseAnalyzeInputs, type AnalyzeInputs, type AnalyzeResult } from './jobforge/analyze.js';
 import {
   type EvidenceLink,
   createCapabilityMetadata,
   stableHash,
   serializeDeterministic,
-} from '../contracts/index.js';
-import { toErrorEnvelope } from '../lib/index.js';
+} from './contracts/index.js';
+import { toErrorEnvelope } from './lib/index.js';
 
 /**
  * Runner Contract for ControlPlane integration
@@ -168,15 +168,13 @@ export class GrowthAutopilotRunner implements RunnerContract {
   }
 
   private convertToAnalyzeInputs(inputs: Record<string, unknown>): AnalyzeInputs {
-    // Convert generic inputs to typed analyze inputs
-    // This is a simplified conversion - in practice would need more robust mapping
-    return inputs as any;
+    return parseAnalyzeInputs(JSON.stringify(inputs));
   }
 
   private createEvidencePacket(
     input: RunnerInput,
     decisions: Record<string, unknown>,
-    result: any,
+    result: AnalyzeResult,
     evidence: RunnerResult['evidence']
   ): EvidencePacket {
     const packet: Omit<EvidencePacket, 'canonical_hash'> = {
@@ -196,7 +194,7 @@ export class GrowthAutopilotRunner implements RunnerContract {
         maturity_report: result.runnerMaturityReport,
       },
       evidence_links: evidence.map(e => ({
-        type: e.type as any,
+        type: e.type as EvidenceLink['type'],
         path: e.path,
         value: e.value,
         description: e.description,
