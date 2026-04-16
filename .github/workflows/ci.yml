@@ -32,9 +32,15 @@ jobs:
         run: pnpm run test
 
       - name: Plan smoke
+        env:
+          GROWTH_TENANT_ID: tenant_smoke
+          GROWTH_PROJECT_ID: project_smoke
         run: pnpm run plan -- --smoke
 
       - name: Run smoke
+        env:
+          GROWTH_TENANT_ID: tenant_smoke
+          GROWTH_PROJECT_ID: project_smoke
         run: pnpm run run -- --smoke
 
       - name: Contracts check
