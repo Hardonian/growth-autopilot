@@ -12,3 +12,7 @@ fixtures/jobforge/.tmp/
 *.swp
 *.swo
 *~
+__pycache__/
+build/
+.pytest_cache/
+*.pyc
