@@ -10,7 +10,7 @@ jobs:
   verify-fast:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
@@ -35,13 +35,13 @@ jobs:
         env:
           GROWTH_TENANT_ID: tenant_smoke
           GROWTH_PROJECT_ID: project_smoke
-        run: pnpm run plan -- --smoke
+        run: pnpm run plan --smoke
 
       - name: Run smoke
         env:
           GROWTH_TENANT_ID: tenant_smoke
           GROWTH_PROJECT_ID: project_smoke
-        run: pnpm run run -- --smoke
+        run: pnpm run run --smoke
 
       - name: Contracts check
         run: pnpm run contracts:check
@@ -60,7 +60,7 @@ jobs:
     needs: verify-fast
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
@@ -83,7 +83,7 @@ jobs:
     needs: verify-fast
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
@@ -105,7 +105,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: verify-fast
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
