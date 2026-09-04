@@ -1,5 +1,9 @@
 # Growth Autopilot
 
+<!-- BEGIN: REPO HERO -->
+![growth-autopilot — hero generated locally on the GPU stack](assets/repo-hero.png)
+<!-- END: REPO HERO -->
+
 A runnerless growth autopilot that scans site structure (routes or exported HTML), generates SEO audits, proposes experiments from event funnels, and drafts content. It never schedules or publishes; it outputs JobForge job requests for expensive verification/scans.
 
 ## Philosophy
